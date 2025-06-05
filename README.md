@@ -1,4 +1,4 @@
-# The-Bread-Chain-Innovators-G-24
+# The WheatChain Innovators
 Professional Min Software Engineering Practical Project recess term for academic year 2025
 
 ASSIGNMENT 
