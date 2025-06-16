@@ -1,7 +1,7 @@
 @extends('layouts.app')
 
 @section('content')
-<div class="container-fluid">
+<div class="container">
     <div class="row">
         <nav class="col-md-2 d-none d-md-block bg-dark sidebar text-white">
             <div class="sidebar-sticky">
@@ -16,19 +16,16 @@
                         </a>
                     </li>
                     <li class="nav-item">
+                        <a class="nav-link text-white" href="#">My Crops</a>
+                    </li>
+                    <li class="nav-item">
                         <a class="nav-link text-white" href="#">Orders</a>
                     </li>
                     <li class="nav-item">
-                        <a class="nav-link text-white" href="#">Inventory</a>
+                        <a class="nav-link text-white" href="#">Weather</a>
                     </li>
                     <li class="nav-item">
-                        <a class="nav-link text-white" href="#">Reports</a>
-                    </li>
-                    <li class="nav-item">
-                        <a class="nav-link text-white" href="#">Messages</a>
-                    </li>
-                    <li class="nav-item">
-                        <a class="nav-link text-white" href="#">Profile</a>
+                        <a class="nav-link text-white" href="#">Market Prices</a>
                     </li>
                     <li class="nav-item mt-4">
                         <form action="{{ route('logout') }}" method="POST">
@@ -44,35 +41,43 @@
 
         <main class="col-md-10 ms-sm-auto px-4">
             <nav class="navbar navbar-light bg-light mb-4">
-                <span class="navbar-brand">Dashboard</span>
+                <span class="navbar-brand">Farmer Dashboard</span>
                 <div>
                     <span class="me-3">Welcome, {{ Auth::user()->username }}</span>
-                    <span class="badge bg-primary">{{ ucfirst($role) }}</span>
+                    <span class="badge bg-success">Farmer</span>
                 </div>
             </nav>
 
             <div class="row mb-4">
-                <div class="col-md-4">
+                <div class="col-md-3">
                     <div class="card text-white bg-primary">
                         <div class="card-body">
-                            <h5>Pending Orders</h5>
-                            <h2>{{ $pendingOrders }}</h2>
+                            <h5>Active Crops</h5>
+                            <h2>{{ $activeCrops ?? 0 }}</h2>
                         </div>
                     </div>
                 </div>
-                <div class="col-md-4">
-                    <div class="card text-white bg-warning">
-                        <div class="card-body">
-                            <h5>Inventory Alerts</h5>
-                            <h2>{{ $inventoryAlerts }}</h2>
-                        </div>
-                    </div>
-                </div>
-                <div class="col-md-4">
+                <div class="col-md-3">
                     <div class="card text-white bg-success">
                         <div class="card-body">
-                            <h5>Forecasts & ML Insights</h5>
-                            <h2>New</h2>
+                            <h5>Harvest Ready</h5>
+                            <h2>{{ $harvestReady ?? 0 }}</h2>
+                        </div>
+                    </div>
+                </div>
+                <div class="col-md-3">
+                    <div class="card text-white bg-warning">
+                        <div class="card-body">
+                            <h5>Pending Orders</h5>
+                            <h2>{{ $pendingOrders ?? 0 }}</h2>
+                        </div>
+                    </div>
+                </div>
+                <div class="col-md-3">
+                    <div class="card text-white bg-info">
+                        <div class="card-body">
+                            <h5>Market Price</h5>
+                            <h2>${{ $marketPrice ?? '0.00' }}</h2>
                         </div>
                     </div>
                 </div>
@@ -81,7 +86,7 @@
             <div class="row">
                 <div class="col-md-8">
                     <div class="card">
-                        <div class="card-header">Recent Activity Feed</div>
+                        <div class="card-header">Recent Activity</div>
                         <div class="card-body">
                             @forelse ($recentActivity as $activity)
                                 <div class="activity-item">
@@ -98,14 +103,10 @@
                     <div class="card">
                         <div class="card-header">Quick Actions</div>
                         <div class="card-body">
-                            @if (in_array($role, ['farmer', 'supplier', 'manufacturer']))
-                                <a href="#" class="btn btn-primary mb-2">Create New Order</a>
-                            @endif
-                            @if ($role === 'supplier')
-                                <a href="#" class="btn btn-warning mb-2">Replenish Inventory</a>
-                            @endif
-                            <a href="#" class="btn btn-info mb-2">Send Message</a>
-                            <a href="#" class="btn btn-secondary mb-2">Generate Report</a>
+                            <a href="#" class="btn btn-primary mb-2">Add New Crop</a>
+                            <a href="#" class="btn btn-warning mb-2">View Orders</a>
+                            <a href="#" class="btn btn-info mb-2">Check Weather</a>
+                            <a href="#" class="btn btn-secondary mb-2">Market Analysis</a>
                         </div>
                     </div>
                 </div>
@@ -113,4 +114,4 @@
         </main>
     </div>
 </div>
-@endsection
+@endsection 
