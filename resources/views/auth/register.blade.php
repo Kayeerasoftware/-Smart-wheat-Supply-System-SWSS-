@@ -192,7 +192,6 @@
                 <label for="role" class="block text-gray-200 mb-1 font-medium">Role</label>
                 <select id="role" name="role" class="w-full px-4 py-3 rounded-lg bg-white/10 border border-white/20 outline-none focus:border-blue-400 @error('role') border-red-400 @enderror" required>
                     <option value="">Select Role</option>
-                    <option value="admin" {{ old('role') == 'admin' ? 'selected' : '' }}>Admin</option>
                     <option value="farmer" {{ old('role') == 'farmer' ? 'selected' : '' }}>Farmer</option>
                     <option value="supplier" {{ old('role') == 'supplier' ? 'selected' : '' }}>Supplier</option>
                     <option value="manufacturer" {{ old('role') == 'manufacturer' ? 'selected' : '' }}>Manufacturer</option>
