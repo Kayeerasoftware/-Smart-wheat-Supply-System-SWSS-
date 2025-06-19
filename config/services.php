@@ -35,4 +35,17 @@ return [
         ],
     ],
 
+    'mailgun' => [
+        'domain' => env('MAILGUN_DOMAIN'),
+        'secret' => env('MAILGUN_SECRET'),
+        'endpoint' => env('MAILGUN_ENDPOINT', 'api.mailgun.net'),
+        'scheme' => 'https',
+    ],
+
+    'java_server' => [
+        'url' => env('JAVA_SERVER_URL', 'http://localhost:8080'),
+        'timeout' => env('JAVA_SERVER_TIMEOUT', 60),
+        'api_key' => env('JAVA_SERVER_API_KEY'),
+    ],
+
 ];

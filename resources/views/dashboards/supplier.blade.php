@@ -322,52 +322,162 @@
 
         <!-- Main Content -->
         <main class="flex-1 p-6">
-            <!-- Stats Grid -->
+            @if(isset($vendor) && $vendor && $vendor->facilityVisits->where('status', 'scheduled')->count() > 0)
+                @php
+                    $nextVisit = $vendor->facilityVisits->where('status', 'scheduled')->sortBy('scheduled_at')->first();
+                @endphp
+                <div class="alert alert-info bg-blue-100 text-blue-900 border border-blue-300 rounded-lg p-4 mb-6">
+                    <strong>Upcoming Facility Visit:</strong><br>
+                    <span>Date: {{ $nextVisit->scheduled_at->format('M d, Y') }}</span><br>
+                    <span>Notes: {{ $nextVisit->notes ?? 'No notes' }}</span>
+                </div>
+            @endif
+            @if(isset($supplierInventory) && $supplierInventory->count() > 0)
+                <div class="glass-card p-6 rounded-2xl mb-8">
+                    <h2 class="text-2xl font-bold font-space mb-6">Your Inventory</h2>
+                    <div class="overflow-x-auto">
+                        <table class="w-full text-left">
+                            <thead>
+                                <tr class="border-b border-gray-700">
+                                    <th class="py-3 px-4 font-semibold">Product</th>
+                                    <th class="py-3 px-4 font-semibold">Warehouse</th>
+                                    <th class="py-3 px-4 font-semibold">On Hand</th>
+                                    <th class="py-3 px-4 font-semibold">Available</th>
+                                    <th class="py-3 px-4 font-semibold">Reserved</th>
+                                    <th class="py-3 px-4 font-semibold">Status</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                @foreach($supplierInventory as $inv)
+                                    <tr class="border-b border-gray-800 hover:bg-gray-800/50 transition-colors">
+                                        <td class="py-4 px-4">{{ $inv->product->name ?? 'N/A' }}</td>
+                                        <td class="py-4 px-4">{{ $inv->warehouse->name ?? 'N/A' }}</td>
+                                        <td class="py-4 px-4">{{ $inv->quantity_on_hand }}</td>
+                                        <td class="py-4 px-4">{{ $inv->quantity_available }}</td>
+                                        <td class="py-4 px-4">{{ $inv->quantity_reserved }}</td>
+                                        <td class="py-4 px-4">
+                                            @if($inv->quantity_available <= 0)
+                                                <span class="px-2 py-1 bg-red-500/20 text-red-300 rounded-full text-xs">Out of Stock</span>
+                                            @elseif($inv->quantity_available <= 10)
+                                                <span class="px-2 py-1 bg-yellow-500/20 text-yellow-300 rounded-full text-xs">Low Stock</span>
+                                            @else
+                                                <span class="px-2 py-1 bg-green-500/20 text-green-300 rounded-full text-xs">In Stock</span>
+                                            @endif
+                                        </td>
+                                    </tr>
+                                @endforeach
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            @endif
+            <!-- Analytics Summary Cards -->
             <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
                 <div class="stat-card p-6 rounded-2xl text-center float-animation">
                     <div class="w-16 h-16 bg-gradient-to-r from-blue-500 to-purple-600 rounded-2xl flex items-center justify-center mx-auto mb-4">
                         <i class="fas fa-warehouse text-2xl text-white"></i>
                     </div>
-                    <h3 class="text-3xl font-bold font-space mb-2">1,247</h3>
-                    <p class="text-gray-400 mb-2">Total Inventory (tons)</p>
-                    <div class="progress-bar">
-                        <div class="progress-fill" style="width: 78%"></div>
-                    </div>
+                    <h3 class="text-3xl font-bold font-space mb-2">{{ number_format($totalInventory ?? 0) }}</h3>
+                    <p class="text-gray-400 mb-2">Total Inventory (units)</p>
                 </div>
-
                 <div class="stat-card p-6 rounded-2xl text-center float-animation" style="animation-delay: 0.2s">
                     <div class="w-16 h-16 bg-gradient-to-r from-green-500 to-teal-600 rounded-2xl flex items-center justify-center mx-auto mb-4">
-                        <i class="fas fa-shopping-cart text-2xl text-white"></i>
+                        <i class="fas fa-dollar-sign text-2xl text-white"></i>
                     </div>
-                    <h3 class="text-3xl font-bold font-space mb-2">23</h3>
-                    <p class="text-gray-400 mb-2">Active Orders</p>
-                    <div class="progress-bar">
-                        <div class="progress-fill" style="width: 65%"></div>
-                    </div>
+                    <h3 class="text-3xl font-bold font-space mb-2">${{ number_format($totalInventoryValue ?? 0, 2) }}</h3>
+                    <p class="text-gray-400 mb-2">Inventory Value</p>
                 </div>
-
                 <div class="stat-card p-6 rounded-2xl text-center float-animation" style="animation-delay: 0.4s">
                     <div class="w-16 h-16 bg-gradient-to-r from-yellow-500 to-orange-600 rounded-2xl flex items-center justify-center mx-auto mb-4">
                         <i class="fas fa-exclamation-triangle text-2xl text-white"></i>
                     </div>
-                    <h3 class="text-3xl font-bold font-space mb-2">5</h3>
-                    <p class="text-gray-400 mb-2">Low Stock Alerts</p>
-                    <div class="progress-bar">
-                        <div class="progress-fill" style="width: 25%"></div>
-                    </div>
+                    <h3 class="text-3xl font-bold font-space mb-2">{{ $lowStockItems ?? 0 }}</h3>
+                    <p class="text-gray-400 mb-2">Low Stock Items</p>
                 </div>
-
                 <div class="stat-card p-6 rounded-2xl text-center float-animation" style="animation-delay: 0.6s">
                     <div class="w-16 h-16 bg-gradient-to-r from-pink-500 to-rose-600 rounded-2xl flex items-center justify-center mx-auto mb-4">
-                        <i class="fas fa-truck text-2xl text-white"></i>
+                        <i class="fas fa-ban text-2xl text-white"></i>
                     </div>
-                    <h3 class="text-3xl font-bold font-space mb-2">12</h3>
-                    <p class="text-gray-400 mb-2">Pending Deliveries</p>
-                    <div class="progress-bar">
-                        <div class="progress-fill" style="width: 40%"></div>
-                    </div>
+                    <h3 class="text-3xl font-bold font-space mb-2">{{ $outOfStockItems ?? 0 }}</h3>
+                    <p class="text-gray-400 mb-2">Out of Stock</p>
                 </div>
             </div>
+
+            <!-- Filter/Search Form -->
+            <form method="GET" class="mb-6 flex flex-wrap gap-4 items-end">
+                <div>
+                    <label class="block text-sm mb-1">Product Search</label>
+                    <input type="text" name="search" value="{{ $filter_search ?? '' }}" class="form-input rounded border-gray-300" placeholder="Name or SKU">
+                </div>
+                <div>
+                    <label class="block text-sm mb-1">Warehouse</label>
+                    <select name="warehouse" class="form-select rounded border-gray-300">
+                        <option value="">All</option>
+                        @foreach($warehouses ?? [] as $wh)
+                            <option value="{{ $wh->id }}" @if(($filter_warehouse ?? '') == $wh->id) selected @endif>{{ $wh->name }}</option>
+                        @endforeach
+                    </select>
+                </div>
+                <div>
+                    <label class="block text-sm mb-1">Status</label>
+                    <select name="status" class="form-select rounded border-gray-300">
+                        <option value="">All</option>
+                        <option value="in" @if(($filter_status ?? '') == 'in') selected @endif>In Stock</option>
+                        <option value="low" @if(($filter_status ?? '') == 'low') selected @endif>Low Stock</option>
+                        <option value="out" @if(($filter_status ?? '') == 'out') selected @endif>Out of Stock</option>
+                    </select>
+                </div>
+                <div>
+                    <button type="submit" class="btn-primary px-6 py-2 rounded-xl font-semibold">Filter</button>
+                </div>
+            </form>
+
+            <!-- Inventory Trend Chart -->
+            <div class="glass-card p-6 rounded-2xl mb-8">
+                <h2 class="text-xl font-bold font-space mb-4">Inventory Trend</h2>
+                <canvas id="inventoryTrendChart" height="100"></canvas>
+            </div>
+
+            <!-- Inventory Table -->
+            @if(isset($filteredInventory) && $filteredInventory->count() > 0)
+                <div class="glass-card p-6 rounded-2xl mb-8">
+                    <h2 class="text-2xl font-bold font-space mb-6">Filtered Inventory</h2>
+                    <div class="overflow-x-auto">
+                        <table class="w-full text-left">
+                            <thead>
+                                <tr class="border-b border-gray-700">
+                                    <th class="py-3 px-4 font-semibold">Product</th>
+                                    <th class="py-3 px-4 font-semibold">Warehouse</th>
+                                    <th class="py-3 px-4 font-semibold">On Hand</th>
+                                    <th class="py-3 px-4 font-semibold">Available</th>
+                                    <th class="py-3 px-4 font-semibold">Reserved</th>
+                                    <th class="py-3 px-4 font-semibold">Status</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                @foreach($filteredInventory as $inv)
+                                    <tr class="border-b border-gray-800 hover:bg-gray-800/50 transition-colors">
+                                        <td class="py-4 px-4">{{ $inv->product->name ?? 'N/A' }}</td>
+                                        <td class="py-4 px-4">{{ $inv->warehouse->name ?? 'N/A' }}</td>
+                                        <td class="py-4 px-4">{{ $inv->quantity_on_hand }}</td>
+                                        <td class="py-4 px-4">{{ $inv->quantity_available }}</td>
+                                        <td class="py-4 px-4">{{ $inv->quantity_reserved }}</td>
+                                        <td class="py-4 px-4">
+                                            @if($inv->quantity_available <= 0)
+                                                <span class="px-2 py-1 bg-red-500/20 text-red-300 rounded-full text-xs">Out of Stock</span>
+                                            @elseif($inv->quantity_available <= 10)
+                                                <span class="px-2 py-1 bg-yellow-500/20 text-yellow-300 rounded-full text-xs">Low Stock</span>
+                                            @else
+                                                <span class="px-2 py-1 bg-green-500/20 text-green-300 rounded-full text-xs">In Stock</span>
+                                            @endif
+                                        </td>
+                                    </tr>
+                                @endforeach
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            @endif
 
             <!-- Main Dashboard Grid -->
             <div class="grid grid-cols-1 lg:grid-cols-3 gap-8">
@@ -392,19 +502,19 @@
                 <div class="glass-card p-6 rounded-2xl">
                     <h2 class="text-xl font-bold font-space mb-6">Quick Actions</h2>
                     <div class="space-y-4">
-                        <a href="#" class="btn-primary w-full py-3 px-4 rounded-xl font-semibold flex items-center justify-center space-x-2 relative overflow-hidden">
+                        <a href="{{ route('products.create') }}" class="btn-primary w-full py-3 px-4 rounded-xl font-semibold flex items-center justify-center space-x-2 relative overflow-hidden">
                             <i class="fas fa-plus"></i>
                             <span>New Order</span>
                         </a>
-                        <a href="#" class="btn-primary w-full py-3 px-4 rounded-xl font-semibold flex items-center justify-center space-x-2 relative overflow-hidden">
+                        <a href="{{ route('inventory.index') }}" class="btn-primary w-full py-3 px-4 rounded-xl font-semibold flex items-center justify-center space-x-2 relative overflow-hidden">
                             <i class="fas fa-sync-alt"></i>
                             <span>Update Inventory</span>
                         </a>
-                        <a href="#" class="btn-primary w-full py-3 px-4 rounded-xl font-semibold flex items-center justify-center space-x-2 relative overflow-hidden">
+                        <a href="{{ route('products.analytics') }}" class="btn-primary w-full py-3 px-4 rounded-xl font-semibold flex items-center justify-center space-x-2 relative overflow-hidden">
                             <i class="fas fa-chart-line"></i>
                             <span>View Reports</span>
                         </a>
-                        <a href="#" class="btn-primary w-full py-3 px-4 rounded-xl font-semibold flex items-center justify-center space-x-2 relative overflow-hidden">
+                        <a href="#" class="btn-primary w-full py-3 px-4 rounded-xl font-semibold flex items-center justify-center space-x-2 relative overflow-hidden" onclick="alert('Delivery tracking coming soon!')">
                             <i class="fas fa-truck"></i>
                             <span>Track Deliveries</span>
                         </a>
@@ -432,13 +542,13 @@
                             </div>
                         </div>
                         
-                        <div class="activity-item p-4 rounded-lg">
-                            <div class="flex items-center justify-between">
-                                <div class="flex items-center space-x-3">
-                                    <div class="w-10 h-10 bg-gradient-to-r from-blue-500 to-purple-600 rounded-full flex items-center justify-center">
+                            <div class="activity-item p-4 rounded-lg">
+                                <div class="flex items-center justify-between">
+                                    <div class="flex items-center space-x-3">
+                                        <div class="w-10 h-10 bg-gradient-to-r from-blue-500 to-purple-600 rounded-full flex items-center justify-center">
                                         <i class="fas fa-plus text-white text-sm"></i>
-                                    </div>
-                                    <div>
+                                        </div>
+                                        <div>
                                         <p class="font-medium">New order received from Miller Co.</p>
                                         <p class="text-sm text-gray-400">Dec 15, 2024 12:15</p>
                                     </div>
@@ -452,7 +562,7 @@
                                 <div class="flex items-center space-x-3">
                                     <div class="w-10 h-10 bg-gradient-to-r from-yellow-500 to-orange-600 rounded-full flex items-center justify-center">
                                         <i class="fas fa-exclamation-triangle text-white text-sm"></i>
-                                    </div>
+                                        </div>
                                     <div>
                                         <p class="font-medium">Low stock alert: Premium Wheat Grade A</p>
                                         <p class="text-sm text-gray-400">Dec 15, 2024 09:45</p>
@@ -462,7 +572,7 @@
                             </div>
                         </div>
                         
-                        <div class="activity-item p-4 rounded-lg">
+                            <div class="activity-item p-4 rounded-lg">
                             <div class="flex items-center justify-between">
                                 <div class="flex items-center space-x-3">
                                     <div class="w-10 h-10 bg-gradient-to-r from-purple-500 to-pink-600 rounded-full flex items-center justify-center">
@@ -605,6 +715,31 @@
                 randomCard.textContent = newValue.toLocaleString();
             }
         }, 15000);
+
+        const ctxTrend = document.getElementById('inventoryTrendChart').getContext('2d');
+        const inventoryTrendChart = new Chart(ctxTrend, {
+            type: 'line',
+            data: {
+                labels: ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'],
+                datasets: [{
+                    label: 'Inventory',
+                    data: [45, 52, 48, 61, 58, 55, 62, 59, 68, 72, 65, 70], // Replace with real data
+                    borderColor: '#4FACFE',
+                    backgroundColor: 'rgba(79, 172, 254, 0.2)',
+                    fill: true,
+                    tension: 0.4
+                }]
+            },
+            options: {
+                responsive: true,
+                plugins: {
+                    legend: { display: false },
+                },
+                scales: {
+                    y: { beginAtZero: true }
+                }
+            }
+        });
     </script>
 </body>
 </html>

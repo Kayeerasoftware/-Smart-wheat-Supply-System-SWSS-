@@ -45,4 +45,9 @@ class User extends Authenticatable
             $this->attributes['password'] = Hash::make($value);
         }
     }
+
+    public function vendor()
+    {
+        return $this->hasOne(Vendor::class, 'user_id', 'user_id');
+    }
 }

@@ -7,6 +7,7 @@
     <script src="https://cdn.tailwindcss.com"></script>
     <link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@300;400;500;600;700&family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
     <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
+    <meta name="csrf-token" content="{{ csrf_token() }}">
     <style>
         :root {
             --primary-gradient: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
@@ -283,6 +284,10 @@
                     <i class="fas fa-users w-5"></i>
                     <span class="font-medium">User Management</span>
                 </a>
+                <a href="#vendor-management" class="sidebar-item flex items-center space-x-3 px-4 py-3 rounded-lg text-gray-300">
+                    <i class="fas fa-building w-5"></i>
+                    <span class="font-medium">Vendor Management</span>
+                </a>
                 <a href="#" class="sidebar-item flex items-center space-x-3 px-4 py-3 rounded-lg text-gray-300">
                     <i class="fas fa-wheat-awn w-5"></i>
                     <span class="font-medium">Inventory</span>
@@ -438,7 +443,183 @@
                     </div>
                 </div>
             </div>
+
+            <!-- Vendor Management Section -->
+            <div class="mt-8" id="vendor-management">
+                <div class="glass-card p-6 rounded-2xl">
+                    <div class="flex justify-between items-center mb-6">
+                        <h2 class="text-2xl font-bold font-space">Vendor Applications</h2>
+                        <div class="flex space-x-2">
+                            <select class="bg-transparent border border-gray-600 rounded-lg px-3 py-1 text-sm" id="statusFilter">
+                                <option value="">All Status</option>
+                                <option value="pending">Pending</option>
+                                <option value="pending_visit">Pending Visit</option>
+                                <option value="approved">Approved</option>
+                                <option value="rejected">Rejected</option>
+                            </select>
+                            <button class="btn-primary px-4 py-2 rounded-lg text-sm">
+                                <i class="fas fa-sync-alt mr-2"></i>
+                                Refresh
+                            </button>
+                        </div>
+                    </div>
+                    
+                    <div class="overflow-x-auto">
+                        <table class="w-full text-left">
+                            <thead>
+                                <tr class="border-b border-gray-700">
+                                    <th class="py-3 px-4 font-semibold">Business Name</th>
+                                    <th class="py-3 px-4 font-semibold">Type</th>
+                                    <th class="py-3 px-4 font-semibold">Status</th>
+                                    <th class="py-3 px-4 font-semibold">Score</th>
+                                    <th class="py-3 px-4 font-semibold">Applied</th>
+                                    <th class="py-3 px-4 font-semibold">Actions</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                @forelse ($vendorApplications ?? [] as $vendor)
+                                    <tr class="border-b border-gray-800 hover:bg-gray-800/50 transition-colors">
+                                        <td class="py-4 px-4">
+                                            <div>
+                                                <p class="font-medium">{{ $vendor->application_data['business_name'] ?? 'N/A' }}</p>
+                                                <p class="text-sm text-gray-400">{{ $vendor->user->email }}</p>
+                                            </div>
+                                        </td>
+                                        <td class="py-4 px-4">
+                                            <span class="px-2 py-1 bg-blue-500/20 text-blue-300 rounded-full text-xs">
+                                                {{ ucfirst($vendor->application_data['business_type'] ?? 'N/A') }}
+                                            </span>
+                                        </td>
+                                        <td class="py-4 px-4">
+                                            @if($vendor->status == 'pending')
+                                                <span class="px-2 py-1 bg-yellow-500/20 text-yellow-300 rounded-full text-xs">Pending</span>
+                                            @elseif($vendor->status == 'pending_visit')
+                                                <span class="px-2 py-1 bg-blue-500/20 text-blue-300 rounded-full text-xs">Visit Scheduled</span>
+                                            @elseif($vendor->status == 'approved')
+                                                <span class="px-2 py-1 bg-green-500/20 text-green-300 rounded-full text-xs">Approved</span>
+                                            @elseif($vendor->status == 'rejected')
+                                                <span class="px-2 py-1 bg-red-500/20 text-red-300 rounded-full text-xs">Rejected</span>
+                                            @endif
+                                        </td>
+                                        <td class="py-4 px-4">
+                                            @if($vendor->total_score !== null)
+                                                <div class="flex items-center space-x-2">
+                                                    <span class="font-medium">{{ number_format($vendor->total_score, 1) }}%</span>
+                                                    <div class="w-16 bg-gray-700 rounded-full h-2">
+                                                        <div class="bg-gradient-to-r from-green-400 to-blue-500 h-2 rounded-full" 
+                                                             style="width: {{ $vendor->total_score }}%"></div>
+                                                    </div>
+                                                </div>
+                                            @else
+                                                <span class="text-gray-400">Pending</span>
+                                            @endif
+                                        </td>
+                                        <td class="py-4 px-4">
+                                            <span class="text-sm text-gray-400">{{ $vendor->created_at->format('M d, Y') }}</span>
+                                        </td>
+                                        <td class="py-4 px-4">
+                                            <div class="flex space-x-2">
+                                                <button class="btn-primary px-3 py-1 rounded text-xs" 
+                                                        onclick="viewVendorDetails({{ $vendor->id }})">
+                                                    <i class="fas fa-eye mr-1"></i>
+                                                    View
+                                                </button>
+                                                @if($vendor->status == 'pending')
+                                                    <button class="bg-green-500 hover:bg-green-600 px-3 py-1 rounded text-xs text-white transition-colors"
+                                                            onclick="scheduleVisit({{ $vendor->id }})">
+                                                        <i class="fas fa-calendar mr-1"></i>
+                                                        Schedule Visit
+                                                    </button>
+                                                @elseif($vendor->status == 'pending_visit')
+                                                    <button class="bg-blue-500 hover:bg-blue-600 px-3 py-1 rounded text-xs text-white transition-colors"
+                                                            onclick="approveVendor({{ $vendor->id }})">
+                                                        <i class="fas fa-check mr-1"></i>
+                                                        Approve
+                                                    </button>
+                                                    <button class="bg-red-500 hover:bg-red-600 px-3 py-1 rounded text-xs text-white transition-colors"
+                                                            onclick="rejectVendor({{ $vendor->id }})">
+                                                        <i class="fas fa-times mr-1"></i>
+                                                        Reject
+                                                    </button>
+                                                @endif
+                                            </div>
+                                        </td>
+                                    </tr>
+                                @empty
+                                    <tr>
+                                        <td colspan="6" class="py-8 px-4 text-center text-gray-400">
+                                            <i class="fas fa-building text-3xl mb-3"></i>
+                                            <p>No vendor applications found</p>
+                                        </td>
+                                    </tr>
+                                @endforelse
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
         </main>
+    </div>
+
+    <!-- Facility Visit Modal -->
+    <div id="scheduleVisitModal" class="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-50 hidden">
+        <div class="bg-white text-gray-900 rounded-xl shadow-lg w-full max-w-md p-6 relative">
+            <button class="absolute top-2 right-2 text-gray-400 hover:text-gray-700" onclick="closeScheduleVisitModal()">
+                <i class="fas fa-times"></i>
+            </button>
+            <h3 class="text-xl font-bold mb-4">Schedule Facility Visit</h3>
+            <form id="scheduleVisitForm">
+                <input type="hidden" id="visitVendorId" name="vendor_id">
+                <div class="mb-4">
+                    <label for="scheduled_at" class="block font-medium mb-1">Visit Date</label>
+                    <input type="date" id="scheduled_at" name="scheduled_at" class="form-input w-full rounded border-gray-300" required>
+                </div>
+                <div class="mb-4">
+                    <label for="notes" class="block font-medium mb-1">Notes (optional)</label>
+                    <textarea id="notes" name="notes" class="form-input w-full rounded border-gray-300" rows="3"></textarea>
+                </div>
+                <div class="flex justify-end space-x-2">
+                    <button type="button" class="px-4 py-2 rounded bg-gray-200 text-gray-700" onclick="closeScheduleVisitModal()">Cancel</button>
+                    <button type="submit" class="px-4 py-2 rounded bg-blue-600 text-white hover:bg-blue-700">Schedule</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- Approve Vendor Confirmation Modal -->
+    <div id="approveVendorModal" class="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-50 hidden">
+        <div class="bg-white text-gray-900 rounded-xl shadow-lg w-full max-w-sm p-6 relative">
+            <button class="absolute top-2 right-2 text-gray-400 hover:text-gray-700" onclick="closeApproveVendorModal()">
+                <i class="fas fa-times"></i>
+            </button>
+            <h3 class="text-xl font-bold mb-4">Approve Vendor</h3>
+            <p>Are you sure you want to approve this vendor? This will grant them full supplier access.</p>
+            <div class="flex justify-end space-x-2 mt-6">
+                <button type="button" class="px-4 py-2 rounded bg-gray-200 text-gray-700" onclick="closeApproveVendorModal()">Cancel</button>
+                <button type="button" class="px-4 py-2 rounded bg-green-600 text-white hover:bg-green-700" onclick="confirmApproveVendor()">Approve</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Reject Vendor Modal -->
+    <div id="rejectVendorModal" class="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-50 hidden">
+        <div class="bg-white text-gray-900 rounded-xl shadow-lg w-full max-w-sm p-6 relative">
+            <button class="absolute top-2 right-2 text-gray-400 hover:text-gray-700" onclick="closeRejectVendorModal()">
+                <i class="fas fa-times"></i>
+            </button>
+            <h3 class="text-xl font-bold mb-4">Reject Vendor</h3>
+            <form id="rejectVendorForm">
+                <input type="hidden" id="rejectVendorId" name="vendor_id">
+                <div class="mb-4">
+                    <label for="reject_reason" class="block font-medium mb-1">Reason for rejection</label>
+                    <textarea id="reject_reason" name="reason" class="form-input w-full rounded border-gray-300" rows="3" required></textarea>
+                </div>
+                <div class="flex justify-end space-x-2">
+                    <button type="button" class="px-4 py-2 rounded bg-gray-200 text-gray-700" onclick="closeRejectVendorModal()">Cancel</button>
+                    <button type="submit" class="px-4 py-2 rounded bg-red-600 text-white hover:bg-red-700">Reject</button>
+                </div>
+            </form>
+        </div>
     </div>
 
     <script>
@@ -560,6 +741,145 @@
             const newValue = currentValue + Math.floor(Math.random() * 10) - 5;
             randomCard.textContent = newValue.toLocaleString();
         }, 10000);
+
+        // Vendor Management Functions
+        function viewVendorDetails(vendorId) {
+            // TODO: Implement modal or redirect to vendor details page
+            alert('View vendor details for ID: ' + vendorId);
+        }
+
+        // Modal logic
+        let currentVendorId = null;
+        function scheduleVisit(vendorId) {
+            currentVendorId = vendorId;
+            document.getElementById('visitVendorId').value = vendorId;
+            document.getElementById('scheduleVisitModal').classList.remove('hidden');
+        }
+        function closeScheduleVisitModal() {
+            document.getElementById('scheduleVisitModal').classList.add('hidden');
+            document.getElementById('scheduleVisitForm').reset();
+        }
+
+        // AJAX form submission
+        const scheduleVisitForm = document.getElementById('scheduleVisitForm');
+        scheduleVisitForm.addEventListener('submit', function(e) {
+            e.preventDefault();
+            const vendorId = document.getElementById('visitVendorId').value;
+            const scheduledAt = document.getElementById('scheduled_at').value;
+            const notes = document.getElementById('notes').value;
+            
+            fetch(`/admin/vendors/${vendorId}/schedule-visit`, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').getAttribute('content'),
+                    'Accept': 'application/json',
+                },
+                body: JSON.stringify({ scheduled_at: scheduledAt, notes: notes })
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.success) {
+                    closeScheduleVisitModal();
+                    alert('Facility visit scheduled successfully!');
+                    window.location.reload(); // Optionally refresh the table
+                } else {
+                    alert('Error: ' + (data.message || 'Could not schedule visit.'));
+                }
+            })
+            .catch(error => {
+                alert('Error: ' + error.message);
+            });
+        });
+
+        // Approve Vendor Modal logic
+        let approveVendorId = null;
+        function approveVendor(vendorId) {
+            approveVendorId = vendorId;
+            document.getElementById('approveVendorModal').classList.remove('hidden');
+        }
+        function closeApproveVendorModal() {
+            document.getElementById('approveVendorModal').classList.add('hidden');
+            approveVendorId = null;
+        }
+        function confirmApproveVendor() {
+            if (!approveVendorId) return;
+            fetch(`/admin/vendors/${approveVendorId}/approve`, {
+                method: 'POST',
+                headers: {
+                    'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').getAttribute('content'),
+                    'Accept': 'application/json',
+                },
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.success) {
+                    closeApproveVendorModal();
+                    alert('Vendor approved successfully!');
+                    window.location.reload();
+                } else {
+                    alert('Error: ' + (data.message || 'Could not approve vendor.'));
+                }
+            })
+            .catch(error => {
+                alert('Error: ' + error.message);
+            });
+        }
+
+        // Reject Vendor Modal logic
+        let rejectVendorId = null;
+        function rejectVendor(vendorId) {
+            rejectVendorId = vendorId;
+            document.getElementById('rejectVendorId').value = vendorId;
+            document.getElementById('rejectVendorModal').classList.remove('hidden');
+        }
+        function closeRejectVendorModal() {
+            document.getElementById('rejectVendorModal').classList.add('hidden');
+            document.getElementById('rejectVendorForm').reset();
+            rejectVendorId = null;
+        }
+        document.getElementById('rejectVendorForm').addEventListener('submit', function(e) {
+            e.preventDefault();
+            const reason = document.getElementById('reject_reason').value;
+            if (!rejectVendorId || !reason) return;
+            fetch(`/admin/vendors/${rejectVendorId}/reject`, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').getAttribute('content'),
+                    'Accept': 'application/json',
+                },
+                body: JSON.stringify({ reason: reason })
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.success) {
+                    closeRejectVendorModal();
+                    alert('Vendor rejected successfully!');
+                    window.location.reload();
+                } else {
+                    alert('Error: ' + (data.message || 'Could not reject vendor.'));
+                }
+            })
+            .catch(error => {
+                alert('Error: ' + error.message);
+            });
+        });
+
+        // Status filter functionality
+        document.getElementById('statusFilter').addEventListener('change', function() {
+            const status = this.value;
+            const rows = document.querySelectorAll('tbody tr');
+            
+            rows.forEach(row => {
+                const statusCell = row.querySelector('td:nth-child(3) span');
+                if (status === '' || (statusCell && statusCell.textContent.toLowerCase().includes(status))) {
+                    row.style.display = '';
+                } else {
+                    row.style.display = 'none';
+                }
+            });
+        });
     </script>
 </body>
 </html>

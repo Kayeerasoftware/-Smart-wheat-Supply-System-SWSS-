@@ -353,7 +353,7 @@
             <div class="flex flex-col md:flex-row justify-between items-center">
                 <p class="text-gray-400 mb-4 md:mb-0">© 2025 The WheatChain Innovators. All rights reserved.</p>
                 <div class="flex space-x-6">
-                    <a href="https://github.com/Kayearasoftware/The-Bread-Chain-Innovators-G-24.git" class="text-gray-400 hover:text-white transition-colors">GitHub</a>
+                    <a href="https://github.com/Kayeerasoftware/Smart-wheat-Supply-System-SWSS-G-24/tree/master" class="text-gray-400 hover:text-white transition-colors">GitHub</a>
                     <a href="#privacy" class="text-gray-400 hover:text-white transition-colors">Privacy Policy</a>
                     <a href="#terms" class="text-gray-400 hover:text-white transition-colors">Terms of Service</a>
                 </div>
@@ -362,27 +362,6 @@
     </footer>
 
     <script>
-        // Smooth scroll
-        document.querySelectorAll('a[href^="#"]').forEach(anchor => {
-            anchor.addEventListener('click', function(e) {
-                e.preventDefault();
-                document.querySelector(this.getAttribute('href')).scrollIntoView({
-                    behavior: 'smooth',
-                    block: 'start'
-                });
-            });
-        });
-
-        // Navbar scroll effect
-        window.addEventListener('scroll', () => {
-            const navbar = document.getElementById('navbar');
-            if (window.scrollY > 100) {
-                navbar.classList.add('scrolled');
-            } else {
-                navbar.classList.remove('scrolled');
-            }
-        });
-
         // Scroll animations
         const observer = new IntersectionObserver((entries) => {
             entries.forEach(entry => {
