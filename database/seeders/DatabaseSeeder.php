@@ -13,8 +13,14 @@ class DatabaseSeeder extends Seeder
     {
         $this->call([
             AdminUserSeeder::class,
+<<<<<<< HEAD
             CategorySeeder::class,
             WarehouseSeeder::class,
+=======
+            SupplierSeeder::class,
+            RawMaterialSeeder::class,
+            ProductionLineSeeder::class,
+>>>>>>> 025298ec537c40e2593fd2784eae476136c98df3
         ]);
     }
 }
