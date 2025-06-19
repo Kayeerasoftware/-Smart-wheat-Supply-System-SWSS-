@@ -36,7 +36,9 @@ Route::get('/dashboard', function () {
         case 'vendor':
             return redirect()->route('vendor.dashboard');
         default:
-            return redirect()->route('dashboard');
+            // If role is not recognized, redirect to login
+            Auth::logout();
+            return redirect()->route('login')->with('error', 'Invalid user role. Please contact administrator.');
     }
 })->middleware(['auth'])->name('dashboard');
 

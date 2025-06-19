@@ -14,7 +14,8 @@ return new class extends Migration
             $table->foreignId('order_id')->constrained('manufacturing_orders')->cascadeOnDelete();
             $table->enum('status', ['passed', 'failed'])->default('failed');
             $table->text('notes')->nullable();
-            $table->foreignId('checked_by')->constrained('users')->cascadeOnDelete();
+            $table->unsignedBigInteger('checked_by');
+            $table->foreign('checked_by')->references('user_id')->on('users')->cascadeOnDelete();
             $table->timestamp('checked_at');
             $table->timestamps();
         });

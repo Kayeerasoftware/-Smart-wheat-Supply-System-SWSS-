@@ -12,6 +12,13 @@ class User extends Authenticatable
     use HasFactory, Notifiable;
 
     protected $table = 'users';
+    
+    /**
+     * The primary key for the model.
+     *
+     * @var string
+     */
+    protected $primaryKey = 'user_id';
 
     protected $fillable = [
         'username',

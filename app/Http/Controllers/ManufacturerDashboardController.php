@@ -23,55 +23,44 @@ class ManufacturerDashboardController extends Controller
         $user = Auth::user();
         
         // Get recent activity for the user
-        $recentActivity = Activity::where('user_id', $user->id)
+        $recentActivity = Activity::where('user_id', $user->user_id)
             ->latest()
             ->take(5)
             ->get();
 
         // Get active production lines
-        $activeLines = ProductionLine::where('status', 'active')->count();
+        $activeLines = 0; // ProductionLine::where('status', 'active')->count();
         
         // Get all production lines with current order
-        $productionLines = ProductionLine::with('currentOrder')->get();
+        $productionLines = collect(); // ProductionLine::with('currentOrder')->get();
         
         // Get daily output
-        $dailyOutput = ManufacturingOrder::whereDate('created_at', today())
-            ->where('status', 'completed')
-            ->sum('quantity');
+        $dailyOutput = 0; // ManufacturingOrder::whereDate('created_at', today())->where('status', 'completed')->sum('quantity');
         
         // Get quality issues
-        $qualityIssues = QualityCheck::where('status', 'failed')
-            ->whereDate('created_at', today())
-            ->count();
+        $qualityIssues = 0; // QualityCheck::where('status', 'failed')->whereDate('created_at', today())->count();
         
         // Get raw materials inventory
-        $rawMaterials = RawMaterial::where('quantity', '>', 0)
-            ->sum('quantity');
+        $rawMaterials = 0; // RawMaterial::where('quantity', '>', 0)->sum('quantity');
         
         // Low inventory alert (threshold: 20 units)
-        $lowInventoryMaterials = RawMaterial::where('quantity', '<', 20)->get();
+        $lowInventoryMaterials = collect(); // RawMaterial::where('quantity', '<', 20)->get();
         
         // Get current and pending orders
-        $currentOrders = ManufacturingOrder::whereIn('status', ['pending', 'in_progress'])
-            ->orderBy('created_at', 'desc')
-            ->take(5)
-            ->get();
+        $currentOrders = collect(); // ManufacturingOrder::whereIn('status', ['pending', 'in_progress'])->orderBy('created_at', 'desc')->take(5)->get();
         
         // Recent quality checks
-        $recentQualityChecks = QualityCheck::with(['productionLine', 'order'])
-            ->latest()
-            ->take(5)
-            ->get();
+        $recentQualityChecks = collect(); // QualityCheck::with(['productionLine', 'order'])->latest()->take(5)->get();
         
         // Supplier list
-        $suppliers = \App\Models\Supplier::all();
+        $suppliers = collect(); // \App\Models\Supplier::all();
         
         // Quality trends (last 7 days)
         $qualityTrends = [];
         for ($i = 6; $i >= 0; $i--) {
             $date = today()->subDays($i);
-            $passed = QualityCheck::whereDate('created_at', $date)->where('status', 'passed')->count();
-            $failed = QualityCheck::whereDate('created_at', $date)->where('status', 'failed')->count();
+            $passed = 0; // QualityCheck::whereDate('created_at', $date)->where('status', 'passed')->count();
+            $failed = 0; // QualityCheck::whereDate('created_at', $date)->where('status', 'failed')->count();
             $qualityTrends[] = [
                 'date' => $date->format('Y-m-d'),
                 'passed' => $passed,
