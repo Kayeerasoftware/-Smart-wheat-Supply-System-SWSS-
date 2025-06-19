@@ -23,7 +23,7 @@ class DashboardController extends BaseController
         $role = $user->role;
 
         // Get recent activity for the user
-        $recentActivity = Activity::where('user_id', $user->user_id)
+        $recentActivity = Activity::where('user_id', $user->id)
             ->latest()
             ->take(5)
             ->get();
