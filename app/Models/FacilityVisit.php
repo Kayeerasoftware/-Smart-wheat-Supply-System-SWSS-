@@ -3,6 +3,7 @@ namespace App\Models;
 
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
+use Carbon\Carbon;
 
 class FacilityVisit extends Model
 {
@@ -13,7 +14,13 @@ class FacilityVisit extends Model
         'scheduled_at',
         'status',
         'notes',
-        'outcome',
+        'outcome'
+    ];
+
+    protected $casts = [
+        'scheduled_at' => 'datetime',
+        'created_at' => 'datetime',
+        'updated_at' => 'datetime'
     ];
 
     public function vendor()

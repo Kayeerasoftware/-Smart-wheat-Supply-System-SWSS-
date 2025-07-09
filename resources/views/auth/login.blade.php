@@ -131,6 +131,14 @@
             <div class="mb-4 p-3 bg-red-600/80 text-white rounded-lg">{{ session('error') }}</div>
         @endif
         
+        @if (session('success'))
+            <div class="mb-4 p-3 bg-green-600/80 text-white rounded-lg">{{ session('success') }}</div>
+        @endif
+        
+        @if (session('info'))
+            <div class="mb-4 p-3 bg-blue-600/80 text-white rounded-lg">{{ session('info') }}</div>
+        @endif
+        
         @if ($errors->any())
             <div class="mb-4 p-3 bg-red-600/80 text-white rounded-lg">
                 <ul class="list-disc pl-5">

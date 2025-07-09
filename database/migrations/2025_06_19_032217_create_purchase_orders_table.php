@@ -40,8 +40,8 @@ return new class extends Migration
             $table->timestamps();
             
             $table->foreign('vendor_id')->references('id')->on('vendors')->onDelete('cascade');
-            $table->foreign('created_by')->references('user_id')->on('users')->onDelete('cascade');
-            $table->foreign('approved_by')->references('user_id')->on('users')->onDelete('set null');
+            $table->foreign('created_by')->references('id')->on('users')->onDelete('cascade');
+            $table->foreign('approved_by')->references('id')->on('users')->onDelete('set null');
             $table->index(['po_number', 'status', 'order_date', 'vendor_id']);
         });
     }

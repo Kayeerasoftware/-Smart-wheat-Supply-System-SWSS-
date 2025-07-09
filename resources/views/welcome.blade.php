@@ -233,8 +233,19 @@
                     <a href="#features" class="text-white/80 hover:text-white transition-colors font-medium">Features</a>
                     <a href="#about" class="text-white/80 hover:text-white transition-colors font-medium">About</a>
                     <a href="#contact" class="text-white/80 hover:text-white transition-colors font-medium">Contact</a>
-                    <a href="/login" class="btn-primary text-white px-6 py-2 rounded-full font-semibold">Login</a>
-                    <a href="/register" class="btn-secondary text-white px-6 py-2 rounded-full font-semibold">Register</a>
+                    
+                    @auth
+                        <!-- Logged in user - show Dashboard and Logout -->
+                        <a href="{{ route('dashboard') }}" class="btn-primary text-white px-6 py-2 rounded-full font-semibold">Dashboard</a>
+                        <form method="POST" action="{{ route('logout') }}" class="inline">
+                            @csrf
+                            <button type="submit" class="btn-secondary text-white px-6 py-2 rounded-full font-semibold">Logout</button>
+                        </form>
+                    @else
+                        <!-- Guest user - show Login and Register -->
+                        <a href="{{ route('login') }}" class="btn-primary text-white px-6 py-2 rounded-full font-semibold">Login</a>
+                        <a href="{{ route('register') }}" class="btn-secondary text-white px-6 py-2 rounded-full font-semibold">Register</a>
+                    @endauth
                 </div>
             </div>
         </div>
@@ -253,9 +264,17 @@
                 <span class="font-semibold text-pink-300">seamless automation</span>
             </p>
             <div class="flex flex-col sm:flex-row gap-4 justify-center items-center">
-                <a href="/register" class="btn-primary text-white px-8 py-4 rounded-full text-lg font-semibold transform hover:scale-105 transition-all">
+                @auth
+                    <!-- Logged in user - show Dashboard button -->
+                    <a href="{{ route('dashboard') }}" class="btn-primary text-white px-8 py-4 rounded-full text-lg font-semibold transform hover:scale-105 transition-all">
+                        Go to Dashboard
+                    </a>
+                @else
+                    <!-- Guest user - show Register button -->
+                    <a href="{{ route('register') }}" class="btn-primary text-white px-8 py-4 rounded-full text-lg font-semibold transform hover:scale-105 transition-all">
                     Start Your Journey
                 </a>
+                @endauth
                 <a href="#features" class="text-white/80 hover:text-white border-2 border-white/30 hover:border-white px-8 py-4 rounded-full text-lg font-semibold transition-all">
                     Explore Features
                 </a>

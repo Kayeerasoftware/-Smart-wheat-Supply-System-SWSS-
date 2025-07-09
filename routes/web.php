@@ -11,6 +11,9 @@ use App\Http\Controllers\ProductController;
 use App\Http\Controllers\CategoryController;
 use App\Http\Controllers\WarehouseController;
 use App\Http\Controllers\InventoryController;
+use App\Http\Controllers\OrderController;
+use App\Http\Controllers\ChatController;
+use App\Http\Controllers\NotificationController;
 
 Route::get('/', function () {
     return view('welcome');
@@ -73,6 +76,7 @@ Route::middleware('auth')->group(function () {
         Route::get('/dashboard', [VendorController::class, 'showStatus'])->name('dashboard');
         Route::get('/application', [VendorController::class, 'showApplicationForm'])->name('application');
         Route::post('/application', [VendorController::class, 'submitApplication'])->name('application.submit');
+        Route::post('/upload-pdf', [VendorController::class, 'uploadNewPdf'])->name('upload-pdf');
         Route::get('/document/{type}', [VendorController::class, 'downloadDocument'])->name('document.download');
     });
 
@@ -128,6 +132,144 @@ Route::middleware('auth')->group(function () {
         Route::get('/analytics', [InventoryController::class, 'analytics'])->name('analytics');
         Route::post('/bulk-adjustment', [InventoryController::class, 'bulkAdjustment'])->name('bulk-adjustment');
     });
+
+    // Supplier Orders Routes
+    Route::middleware('auth')->prefix('orders')->name('orders.')->group(function () {
+        Route::get('/', [OrderController::class, 'index'])->name('index');
+        Route::get('/create', [OrderController::class, 'create'])->name('create');
+        Route::post('/', [OrderController::class, 'store'])->name('store');
+        Route::get('/{order}', [OrderController::class, 'show'])->name('show');
+        Route::get('/{order}/edit', [OrderController::class, 'edit'])->name('edit');
+        Route::put('/{order}', [OrderController::class, 'update'])->name('update');
+        Route::delete('/{order}', [OrderController::class, 'destroy'])->name('destroy');
+    });
+
+    // Supplier Deliveries Routes
+    Route::middleware('auth')->prefix('deliveries')->name('deliveries.')->group(function () {
+        Route::get('/', [DashboardController::class, 'deliveries'])->name('index');
+    });
+
+    // Supplier Reports Routes
+    Route::middleware('auth')->prefix('reports')->name('reports.')->group(function () {
+        Route::get('/', [DashboardController::class, 'reports'])->name('index');
+        Route::get('/export/pdf', [DashboardController::class, 'exportPdf'])->name('export.pdf');
+        Route::get('/export/excel', [DashboardController::class, 'exportExcel'])->name('export.excel');
+        Route::get('/export/csv', [DashboardController::class, 'exportCsv'])->name('export.csv');
+    });
+
+    // Supplier Contracts Routes
+    Route::middleware('auth')->prefix('contracts')->name('contracts.')->group(function () {
+        Route::get('/', [DashboardController::class, 'contracts'])->name('index');
+    });
+
+    // Supplier Payments Routes
+    Route::middleware('auth')->prefix('payments')->name('payments.')->group(function () {
+        Route::get('/', [DashboardController::class, 'payments'])->name('index');
+    });
+
+    // Supplier Profile Settings Routes
+    Route::middleware('auth')->prefix('profile-settings')->name('profile-settings.')->group(function () {
+        Route::get('/', [DashboardController::class, 'profileSettings'])->name('index');
+        Route::post('/save', [DashboardController::class, 'saveProfileSettings'])->name('save');
+    });
+
+    // Notification Routes
+    Route::middleware('auth')->prefix('notifications')->name('notifications.')->group(function () {
+        Route::get('/', [NotificationController::class, 'getNotifications'])->name('index');
+        Route::get('/unread-count', [NotificationController::class, 'getUnreadCount'])->name('unread-count');
+        Route::patch('/{id}/read', [NotificationController::class, 'markAsRead'])->name('mark-read');
+        Route::patch('/mark-all-read', [NotificationController::class, 'markAllAsRead'])->name('mark-all-read');
+    });
+
+    // Chat Routes
+    Route::middleware('auth')->prefix('chat')->name('chat.')->group(function () {
+        Route::get('/', [ChatController::class, 'index'])->name('index');
+        Route::post('/send-message', [ChatController::class, 'sendMessage'])->name('send-message');
+        Route::get('/user/{id}', [ChatController::class, 'getUserDetails'])->name('user-details');
+        Route::get('/online-users', [ChatController::class, 'getOnlineUsers'])->name('online-users');
+        // New chat API routes
+        Route::get('/contacts', [ChatController::class, 'listChatUsers'])->name('contacts');
+        Route::get('/messages/{userId}', [ChatController::class, 'fetchMessages'])->name('fetch-messages');
+        Route::get('/unread-counts', [ChatController::class, 'getUnreadCounts'])->name('unread-counts');
+        Route::post('/typing', [ChatController::class, 'setTyping'])->name('typing');
+        Route::get('/typing', [ChatController::class, 'getTyping'])->name('get-typing');
+    });
+
+    // Admin routes
+    Route::get('/vendors', [\App\Http\Controllers\DashboardController::class, 'vendors'])->name('vendors');
+    Route::get('/admin/vendors', [App\Http\Controllers\AdminController::class, 'vendors'])->name('admin.vendors');
+    Route::get('/admin/analytics', [App\Http\Controllers\AdminController::class, 'analytics'])->name('admin.analytics');
+
+    // Admin Inventory Management Routes
+    Route::middleware('auth')->prefix('admin/inventory')->name('admin.inventory.')->group(function () {
+        Route::get('/', [App\Http\Controllers\AdminInventoryController::class, 'index'])->name('index');
+        Route::get('/create', [App\Http\Controllers\AdminInventoryController::class, 'create'])->name('create');
+        Route::post('/', [App\Http\Controllers\AdminInventoryController::class, 'store'])->name('store');
+        Route::get('/{inventory}', [App\Http\Controllers\AdminInventoryController::class, 'show'])->name('show');
+        Route::get('/{inventory}/edit', [App\Http\Controllers\AdminInventoryController::class, 'edit'])->name('edit');
+        Route::put('/{inventory}', [App\Http\Controllers\AdminInventoryController::class, 'update'])->name('update');
+        Route::delete('/{inventory}', [App\Http\Controllers\AdminInventoryController::class, 'destroy'])->name('destroy');
+        Route::get('/low-stock/alerts', [App\Http\Controllers\AdminInventoryController::class, 'lowStockAlerts'])->name('low-stock-alerts');
+        Route::get('/analytics', [App\Http\Controllers\AdminInventoryController::class, 'analytics'])->name('analytics');
+    });
+
+    // Admin Supply Chain Management Routes
+    Route::middleware('auth')->prefix('admin/supply-chain')->name('admin.supply-chain.')->group(function () {
+        Route::get('/', [App\Http\Controllers\AdminSupplyChainController::class, 'index'])->name('index');
+        Route::get('/orders', [App\Http\Controllers\AdminSupplyChainController::class, 'orders'])->name('orders');
+        Route::get('/purchase-orders', [App\Http\Controllers\AdminSupplyChainController::class, 'purchaseOrders'])->name('purchase-orders');
+        Route::get('/shipments', [App\Http\Controllers\AdminSupplyChainController::class, 'shipments'])->name('shipments');
+        Route::get('/manufacturing-orders', [App\Http\Controllers\AdminSupplyChainController::class, 'manufacturingOrders'])->name('manufacturing-orders');
+        Route::get('/analytics', [App\Http\Controllers\AdminSupplyChainController::class, 'analytics'])->name('analytics');
+    });
+
+    // Admin System Settings Routes
+    Route::middleware('auth')->prefix('admin/system-settings')->name('admin.system-settings.')->group(function () {
+        Route::get('/', [App\Http\Controllers\AdminSystemSettingsController::class, 'index'])->name('index');
+        Route::get('/users', [App\Http\Controllers\AdminSystemSettingsController::class, 'users'])->name('users');
+        Route::get('/configuration', [App\Http\Controllers\AdminSystemSettingsController::class, 'configuration'])->name('configuration');
+        Route::get('/security', [App\Http\Controllers\AdminSystemSettingsController::class, 'security'])->name('security');
+        Route::post('/security/scan', [App\Http\Controllers\AdminSystemSettingsController::class, 'runSecurityScan'])->name('run-security-scan');
+        Route::get('/audit-logs', [App\Http\Controllers\AdminSystemSettingsController::class, 'auditLogs'])->name('audit-logs');
+        
+        // User management actions
+        Route::patch('/users/{user}/role', [App\Http\Controllers\AdminSystemSettingsController::class, 'updateUserRole'])->name('update-user-role');
+        Route::patch('/users/{user}/status', [App\Http\Controllers\AdminSystemSettingsController::class, 'toggleUserStatus'])->name('toggle-user-status');
+        Route::delete('/users/{user}', [App\Http\Controllers\AdminSystemSettingsController::class, 'deleteUser'])->name('delete-user');
+        
+        // Configuration actions
+        Route::patch('/configuration', [App\Http\Controllers\AdminSystemSettingsController::class, 'updateConfiguration'])->name('update-configuration');
+    });
+
+    // Admin Reports Routes
+    Route::middleware('auth')->prefix('admin/reports')->name('admin.reports.')->group(function () {
+        Route::get('/', [App\Http\Controllers\AdminReportsController::class, 'index'])->name('index');
+        Route::get('/user-report', [App\Http\Controllers\AdminReportsController::class, 'userReport'])->name('user-report');
+        Route::get('/activity-report', [App\Http\Controllers\AdminReportsController::class, 'activityReport'])->name('activity-report');
+        Route::get('/vendor-report', [App\Http\Controllers\AdminReportsController::class, 'vendorReport'])->name('vendor-report');
+        
+        // Export routes
+        Route::post('/export/pdf', [App\Http\Controllers\AdminReportsController::class, 'exportPdf'])->name('export-pdf');
+        Route::post('/export/excel', [App\Http\Controllers\AdminReportsController::class, 'exportExcel'])->name('export-excel');
+        Route::post('/export/csv', [App\Http\Controllers\AdminReportsController::class, 'exportCsv'])->name('export-csv');
+    });
+
+    // Admin Audit Logs Routes
+    Route::middleware('auth')->prefix('admin/audit-logs')->name('admin.audit-logs.')->group(function () {
+        Route::get('/', [App\Http\Controllers\AdminAuditLogsController::class, 'index'])->name('index');
+        Route::get('/security-logs', [App\Http\Controllers\AdminAuditLogsController::class, 'securityLogs'])->name('security-logs');
+        Route::get('/user-activity-logs', [App\Http\Controllers\AdminAuditLogsController::class, 'userActivityLogs'])->name('user-activity-logs');
+        Route::get('/system-logs', [App\Http\Controllers\AdminAuditLogsController::class, 'systemLogs'])->name('system-logs');
+        
+        // Export routes
+        Route::post('/export/pdf', [App\Http\Controllers\AdminAuditLogsController::class, 'exportPdf'])->name('export-pdf');
+        Route::post('/export/excel', [App\Http\Controllers\AdminAuditLogsController::class, 'exportExcel'])->name('export-excel');
+        Route::post('/export/csv', [App\Http\Controllers\AdminAuditLogsController::class, 'exportCsv'])->name('export-csv');
+        
+        // Real-time and maintenance routes
+        Route::get('/real-time', [App\Http\Controllers\AdminAuditLogsController::class, 'realTimeLogs'])->name('real-time');
+        Route::post('/clear-old', [App\Http\Controllers\AdminAuditLogsController::class, 'clearOldLogs'])->name('clear-old');
+    });
 });
 
 // Manufacturer Routes
@@ -159,5 +301,35 @@ Route::middleware(['auth', 'role:manufacturer'])->prefix('manufacturer')->name('
     Route::get('/orders/create', [ManufacturerDashboardController::class, 'createOrder'])->name('orders.create');
     Route::post('/orders', [ManufacturerDashboardController::class, 'storeOrder'])->name('orders.store');
 });
+
+// Temporary test route for inventory create view
+Route::get('/test-inventory-create', function () {
+    return view('inventory.create', [
+        'products' => collect([]),
+        'warehouses' => collect([])
+    ]);
+})->name('test.inventory.create');
+
+Route::get('/chat', [ChatController::class, 'index'])->name('chat.index');
+Route::get('/chat/user/{userId}', [ChatController::class, 'getUserDetails'])->name('chat.user.details');
+Route::get('/chat/online-users', [ChatController::class, 'getOnlineUserIds'])->name('chat.online.users');
+
+// Audit Log Export Routes
+Route::get('/admin/audit-logs/export/pdf', [App\Http\Controllers\AdminAuditLogsController::class, 'exportPdf'])->name('admin.audit-logs.export.pdf');
+Route::get('/admin/audit-logs/export/excel', [App\Http\Controllers\AdminAuditLogsController::class, 'exportExcel'])->name('admin.audit-logs.export.excel');
+Route::get('/admin/audit-logs/export/csv', [App\Http\Controllers\AdminAuditLogsController::class, 'exportCsv'])->name('admin.audit-logs.export.csv');
+
+Route::post('/admin/settings', [App\Http\Controllers\AdminController::class, 'updateSettings'])->name('admin.settings.update')->middleware('admin');
+
+Route::get('/admin/security-status', [App\Http\Controllers\AdminController::class, 'securityStatus'])->name('admin.security.status')->middleware('admin');
+
+// Admin Inventory Analytics
+Route::get('/admin/inventory/analytics', [App\Http\Controllers\AdminInventoryController::class, 'analytics'])->name('admin.inventory.analytics');
+
+Route::get('/admin/vendors/export/csv', [App\Http\Controllers\AdminController::class, 'exportVendorsCsv'])->name('admin.vendors.export.csv');
+
+Route::get('/admin/dashboard/export/csv', [App\Http\Controllers\AdminController::class, 'exportDashboardCsv'])->name('admin.dashboard.export.csv');
+
+Route::get('/admin/dashboard/performance-data', [App\Http\Controllers\AdminController::class, 'getSystemPerformanceData'])->name('admin.dashboard.performance-data');
 
 require __DIR__.'/auth.php';

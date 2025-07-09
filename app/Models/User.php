@@ -18,7 +18,7 @@ class User extends Authenticatable
      *
      * @var string
      */
-    protected $primaryKey = 'user_id';
+    protected $primaryKey = 'id';
 
     protected $fillable = [
         'username',
@@ -45,15 +45,28 @@ class User extends Authenticatable
         return $this->password;
     }
 
-    public function setPasswordAttribute($value)
-    {
-        if ($value) {
-            $this->attributes['password'] = Hash::make($value);
-        }
-    }
-
     public function vendor()
     {
-        return $this->hasOne(Vendor::class, 'user_id', 'user_id');
+        return $this->hasOne(Vendor::class, 'user_id', 'id');
+    }
+
+    public function notifications()
+    {
+        return $this->morphMany(\App\Models\Notification::class, 'notifiable');
+    }
+
+    public function unreadNotifications()
+    {
+        return $this->notifications()->whereNull('read_at');
+    }
+
+    public function readNotifications()
+    {
+        return $this->notifications()->whereNotNull('read_at');
+    }
+
+    public function activities()
+    {
+        return $this->hasMany(\App\Models\Activity::class, 'user_id', 'id');
     }
 }

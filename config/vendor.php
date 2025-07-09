@@ -18,9 +18,9 @@ return [
         'timeout' => env('JAVA_SERVER_TIMEOUT', 60),
         'api_key' => env('JAVA_SERVER_API_KEY'),
         'endpoints' => [
-            'validate_vendor' => '/api/validation/validate-vendor',
-            'process_documents' => '/api/process-vendor-documents',
-            'health' => '/health'
+            'validate_pdf' => '/api/validation/validate-pdf',
+            'health' => '/api/validation/health',
+            'required_sections' => '/api/validation/required-sections'
         ],
         'shared_storage' => [
             'path' => storage_path('app/public/vendor_docs'),

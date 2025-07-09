@@ -28,7 +28,7 @@ return new class extends Migration
             $table->json('facilities')->nullable(); // Available facilities
             $table->timestamps();
 
-            $table->foreign('manager_id')->references('user_id')->on('users')->onDelete('set null');
+            $table->foreign('manager_id')->references('id')->on('users')->onDelete('set null');
             $table->index(['code', 'is_active']);
             $table->index(['type', 'is_active']);
         });

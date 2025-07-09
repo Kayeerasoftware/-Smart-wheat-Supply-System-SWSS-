@@ -221,4 +221,94 @@ class VendorController extends Controller
 
         return Storage::disk('public')->download($path, $type . '.pdf');
     }
+
+    /**
+     * Handle PDF upload from rejected page
+     */
+    public function uploadNewPdf(Request $request)
+    {
+        try {
+            $user = Auth::user();
+            $vendor = Vendor::where('user_id', $user->id)->first();
+
+            if (!$vendor) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'Vendor record not found'
+                ], 404);
+            }
+
+            $request->validate([
+                'pdf_document' => 'required|file|mimes:pdf|max:10240', // 10MB max
+            ]);
+
+            // Delete old PDF files if they exist
+            if ($vendor->pdf_paths) {
+                foreach ($vendor->pdf_paths as $path) {
+                    Storage::disk('public')->delete($path);
+                }
+            }
+
+            // Store new PDF
+            $pdfPath = $request->file('pdf_document')->store('vendor_docs', 'public');
+            
+            // Update vendor with new PDF path
+            $vendor->pdf_paths = ['application_pdf' => $pdfPath];
+            $vendor->status = 'pending';
+            $vendor->processing_status = 'pending_review';
+            $vendor->save();
+
+            // Process PDF with Java server (optional)
+            try {
+                $this->processPdfScoring($vendor);
+                
+                // Check if validation was successful
+                if ($vendor->status === 'pdf_validated' || $vendor->status === 'pending_visit') {
+                    return response()->json([
+                        'success' => true,
+                        'message' => 'PDF uploaded and validated successfully!',
+                        'redirect' => route('supplier.dashboard')
+                    ]);
+                } else {
+                    return response()->json([
+                        'success' => false,
+                        'message' => 'PDF validation failed. Please check your document and try again.'
+                    ]);
+                }
+            } catch (Exception $e) {
+                Log::error('PDF validation failed during upload', [
+                    'vendor_id' => $vendor->id,
+                    'error' => $e->getMessage()
+                ]);
+
+                // If Java server is not available, mark as pending for manual review
+                $vendor->update([
+                    'status' => 'pending',
+                    'processing_status' => 'manual_review_required',
+                    'pdf_validation_result' => [
+                        'valid' => false,
+                        'message' => 'PDF validation service unavailable. Document submitted for manual review.',
+                        'overallScore' => 0
+                    ]
+                ]);
+
+                return response()->json([
+                    'success' => true,
+                    'message' => 'PDF uploaded successfully! Document submitted for manual review.',
+                    'redirect' => route('supplier.dashboard')
+                ]);
+            }
+
+        } catch (Exception $e) {
+            Log::error('PDF upload failed', [
+                'user_id' => $user->id,
+                'error' => $e->getMessage()
+            ]);
+
+            return response()->json([
+                'success' => false,
+                'message' => 'Upload failed: ' . $e->getMessage()
+            ], 500);
+        }
+    }
 }
