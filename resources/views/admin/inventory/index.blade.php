@@ -3,7 +3,8 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>SWSS Admin Dashboard - Inventory Management</title>
+    <title>SWSS Admin Inventory</title>
+    @vite(['resources/css/app.css', 'resources/js/app.js'])
     <script src="https://cdn.tailwindcss.com"></script>
     <link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@300;400;500;600;700&family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
     <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
@@ -293,10 +294,7 @@
         </div>
         
         <div class="flex items-center space-x-6">
-            <div class="relative">
-                <i class="fas fa-bell text-gray-300 text-xl cursor-pointer hover:text-white transition-colors"></i>
-                <span class="notification-dot absolute -top-1 -right-1 w-3 h-3 rounded-full"></span>
-            </div>
+            <x-admin-notification-dropdown />
             <div class="flex items-center space-x-3">
                 <div class="text-right">
                     <p class="text-sm font-semibold">{{ Auth::user()->name ?? 'Admin' }}</p>
@@ -312,7 +310,7 @@
     <!-- Sidebar -->
     <aside class="sidebar w-64 p-6" id="sidebar">
         <nav class="space-y-2">
-            <a href="{{ route('dashboard') }}" class="sidebar-item flex items-center space-x-3 px-4 py-3 rounded-lg text-gray-300">
+            <a href="{{ route('admin.dashboard') }}" class="sidebar-item flex items-center space-x-3 px-4 py-3 rounded-lg text-gray-300">
                 <i class="fas fa-tachometer-alt w-5"></i>
                 <span class="font-medium">Dashboard</span>
             </a>
@@ -324,7 +322,7 @@
                 <i class="fas fa-seedling w-5"></i>
                 <span class="font-medium">Inventory</span>
             </a>
-            <a href="#" class="sidebar-item flex items-center space-x-3 px-4 py-3 rounded-lg text-gray-300">
+            <a href="{{ route('admin.supply-chain.index') }}" class="sidebar-item flex items-center space-x-3 px-4 py-3 rounded-lg text-gray-300">
                 <i class="fas fa-truck w-5"></i>
                 <span class="font-medium">Supply Chain</span>
             </a>
@@ -368,14 +366,8 @@
         <div class="mb-8">
             <div class="flex justify-between items-center">
                 <div>
-                    <h1 class="text-3xl font-bold font-space gradient-text">Admin Inventory Management</h1>
-                    <p class="mt-2 text-sm text-gray-400">Comprehensive inventory oversight across all suppliers and warehouses</p>
-                </div>
-                <div class="flex space-x-3">
-                    <a href="{{ route('admin.inventory.create') }}" class="btn-primary inline-flex items-center px-6 py-3 rounded-xl font-semibold text-sm text-white uppercase tracking-wider">
-                        <i class="fas fa-plus mr-2"></i>
-                        Add Inventory
-                    </a>
+                    <h1 class="text-3xl font-bold font-space gradient-text">General Inventory Overview</h1>
+                    <p class="mt-2 text-sm text-gray-400">View inventory across all users and warehouses. This page is for admin insight only; no inventory management actions are available.</p>
                 </div>
             </div>
         </div>
@@ -557,24 +549,10 @@
                                         </div>
                                     </td>
                                     <td class="px-6 py-4">
-                                        <div class="flex space-x-3">
                                             <a href="{{ route('admin.inventory.show', $inventory) }}" 
                                                class="text-blue-400 hover:text-blue-300 transition-colors" title="View Details">
                                                 <i class="fas fa-eye"></i>
                                             </a>
-                                            <a href="{{ route('admin.inventory.edit', $inventory) }}" 
-                                               class="text-green-400 hover:text-green-300 transition-colors" title="Edit">
-                                                <i class="fas fa-edit"></i>
-                                            </a>
-                                            <form action="{{ route('admin.inventory.destroy', $inventory) }}" method="POST" class="inline">
-                                                @csrf
-                                                @method('DELETE')
-                                                <button type="submit" class="text-red-400 hover:text-red-300 transition-colors" 
-                                                    onclick="return confirm('Are you sure you want to delete this inventory?')" title="Delete">
-                                                    <i class="fas fa-trash"></i>
-                                                </button>
-                                            </form>
-                                        </div>
                                     </td>
                                 </tr>
                             @endforeach
@@ -592,11 +570,7 @@
                         <i class="fas fa-boxes text-3xl text-white"></i>
                     </div>
                     <h3 class="text-lg font-medium text-white mb-2">No inventory found</h3>
-                    <p class="text-gray-400 mb-6">Get started by creating your first inventory item.</p>
-                    <a href="{{ route('admin.inventory.create') }}" class="btn-primary inline-flex items-center px-6 py-3 rounded-xl font-semibold text-sm text-white uppercase tracking-wider">
-                        <i class="fas fa-plus mr-2"></i>
-                        Add Inventory
-                    </a>
+                    <p class="text-gray-400 mb-6">No inventory items have been added yet.</p>
                 </div>
             @endif
         </div>

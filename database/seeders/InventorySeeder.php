@@ -20,15 +20,15 @@ class InventorySeeder extends Seeder
         $supplier = User::where('email', 'supplier@gmail.com')->first();
         
         if (!$supplier) {
-            $this->command->warn('Test supplier not found. Please run TestSupplierSeeder first.');
+            $this->command->warn('Supplier not found. Please run SupplierUserSeeder first.');
             return;
         }
 
         // Get products associated with this supplier
-        $products = Product::where('supplier_id', $supplier->id)->get();
+        $products = Product::where('type', 'raw')->where('name', 'Wheat')->get();
         
         if ($products->isEmpty()) {
-            $this->command->warn('No products found for supplier. Please run ProductSeeder first.');
+            $this->command->warn('No raw wheat product found. Please run ProductSeeder first.');
             return;
         }
 
@@ -40,40 +40,48 @@ class InventorySeeder extends Seeder
             return;
         }
 
+        $startDate = now()->subYears(5)->startOfMonth();
+        $endDate = now();
+        $period = \Carbon\CarbonPeriod::create($startDate, '1 month', $endDate);
         // Create inventory records
         foreach ($products as $product) {
             foreach ($warehouses->take(2) as $warehouse) {
-                $quantityOnHand = rand(50, 500);
-                $quantityReserved = rand(0, 50);
-                $quantityAvailable = $quantityOnHand - $quantityReserved;
-                
-                Inventory::updateOrCreate(
-                    [
-                        'product_id' => $product->id,
-                        'warehouse_id' => $warehouse->id,
-                    ],
-                    [
-                        'product_id' => $product->id,
-                        'warehouse_id' => $warehouse->id,
-                        'quantity_on_hand' => $quantityOnHand,
-                        'quantity_available' => $quantityAvailable,
-                        'quantity_reserved' => $quantityReserved,
-                        'quantity_on_order' => rand(0, 100),
-                        'average_cost' => $product->cost_price ?? 1.50,
-                        'location' => 'A' . rand(1, 10) . '-' . rand(1, 20),
-                        'batch_number' => 'BATCH-' . strtoupper(substr(md5(rand()), 0, 8)),
-                        'expiry_date' => now()->addMonths(rand(6, 24)),
-                        'status' => 'active',
-                        'attributes' => json_encode([
-                            'supplier_id' => $supplier->id,
-                            'quality_grade' => 'A',
-                            'storage_conditions' => 'Dry, Cool'
-                        ]),
-                    ]
-                );
+                foreach ($period as $date) {
+                    $quantityOnHand = rand(50, 500);
+                    $quantityReserved = rand(0, 50);
+                    $quantityAvailable = $quantityOnHand - $quantityReserved;
+                    
+                    Inventory::updateOrCreate(
+                        [
+                            'product_id' => $product->id,
+                            'warehouse_id' => $warehouse->id,
+                            'created_at' => $date,
+                        ],
+                        [
+                            'product_id' => $product->id,
+                            'warehouse_id' => $warehouse->id,
+                            'quantity_on_hand' => $quantityOnHand,
+                            'quantity_available' => $quantityAvailable,
+                            'quantity_reserved' => $quantityReserved,
+                            'quantity_on_order' => rand(0, 100),
+                            'average_cost' => $product->cost_price ?? 1.50,
+                            'location' => 'A' . rand(1, 10) . '-' . rand(1, 20),
+                            'batch_number' => 'BATCH-' . strtoupper(substr(md5(rand()), 0, 8)),
+                            'expiry_date' => $date->copy()->addMonths(rand(6, 24)),
+                            'status' => 'active',
+                            'attributes' => json_encode([
+                                'supplier_id' => $supplier->id,
+                                'quality_grade' => 'A',
+                                'storage_conditions' => 'Dry, Cool'
+                            ]),
+                            'created_at' => $date,
+                            'updated_at' => $date,
+                        ]
+                    );
+                }
             }
         }
 
-        $this->command->info('Inventory data created successfully for test supplier.');
+        $this->command->info('5 years of monthly inventory data created for the main supplier.');
     }
 } 

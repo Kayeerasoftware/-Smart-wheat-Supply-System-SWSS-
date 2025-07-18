@@ -326,12 +326,31 @@
                         <div class="col-md-6 mb-3">
                             <div class="customer-card">
                                 <h5 class="mb-2">Customer Insights</h5>
-                                <h3 class="mb-2">{{ $newCustomers ?? 12 }} New Customers</h3>
-                                <p class="mb-2">Top product: Whole Wheat Flour</p>
+                                @if(isset($customerInsights['totalCustomers']) && $customerInsights['totalCustomers'] > 0)
+                                    <h3 class="mb-2">{{ $customerInsights['totalCustomers'] }} Total Customers</h3>
+                                    <p class="mb-2">Top product: {{ $customerInsights['topProduct'] }}</p>
+                                    <div class="d-flex justify-content-between">
+                                        <span>Satisfaction: {{ $customerInsights['satisfaction'] }}/5</span>
+                                        <span class="text-success">+{{ $customerInsights['satisfactionChange'] }}</span>
+                                    </div>
+                                    @if(isset($customerInsights['recommendations']) && count($customerInsights['recommendations']) > 0)
+                                        <div class="mt-2">
+                                            <small class="text-muted">Recommendations:</small>
+                                            <ul class="list-unstyled small mt-1">
+                                                @foreach(array_slice($customerInsights['recommendations'], 0, 2) as $recommendation)
+                                                    <li class="text-primary">• {{ $recommendation }}</li>
+                                                @endforeach
+                                            </ul>
+                                        </div>
+                                    @endif
+                                @else
+                                    <h3 class="mb-2">{{ $customerInsights['newCustomers'] ?? 12 }} New Customers</h3>
+                                    <p class="mb-2">Top product: {{ $customerInsights['topProduct'] }}</p>
                                 <div class="d-flex justify-content-between">
-                                    <span>Satisfaction: 4.8/5</span>
-                                    <span class="text-success">+0.2</span>
+                                        <span>Satisfaction: {{ $customerInsights['satisfaction'] }}/5</span>
+                                        <span class="text-success">+{{ $customerInsights['satisfactionChange'] }}</span>
                     </div>
+                                @endif
                 </div>
                         </div>
                     </div>
@@ -375,6 +394,79 @@
                     </div>
                 </div>
             </div>
+
+                    <!-- Customer Segmentation Section -->
+                    @if(isset($customerSegments) && !empty($customerSegments))
+                    <div class="row mb-4">
+                        <div class="col-12">
+                            <div class="card stats-card">
+                                <div class="card-body">
+                                    <h5 class="card-title mb-3">
+                                        <i class="bi bi-people-fill me-2"></i>Customer Segmentation
+                                    </h5>
+                                    @if(isset($customerSegments['customers']))
+                                        <div class="row">
+                                            @php
+                                                $segmentBreakdown = [];
+                                                $totalRevenue = 0;
+                                                $avgOrderValue = 0;
+                                                foreach($customerSegments['customers'] as $customer) {
+                                                    $segment = $customer['segment_name'] ?? 'Unknown';
+                                                    $segmentBreakdown[$segment] = ($segmentBreakdown[$segment] ?? 0) + 1;
+                                                    $totalRevenue += $customer['total_spent'] ?? 0;
+                                                    $avgOrderValue += $customer['avg_order_value'] ?? 0;
+                                                }
+                                                $avgOrderValue = count($customerSegments['customers']) > 0 ? $avgOrderValue / count($customerSegments['customers']) : 0;
+                                            @endphp
+                                            @foreach($segmentBreakdown as $segment => $count)
+                                                <div class="col-md-2 mb-2">
+                                                    <div class="text-center p-2 rounded" style="background: rgba(102, 126, 234, 0.1);">
+                                                        <h6 class="mb-1">{{ $segment }}</h6>
+                                                        <h4 class="mb-0 text-primary">{{ $count }}</h4>
+                                                        <small class="text-muted">{{ round(($count / count($customerSegments['customers'])) * 100, 1) }}%</small>
+                                                    </div>
+                                                </div>
+                                            @endforeach
+                                        </div>
+                                        <div class="row mt-3">
+                                            <div class="col-md-4">
+                                                <div class="text-center">
+                                                    <h6 class="text-muted">Total Revenue</h6>
+                                                    <h5 class="text-success">${{ number_format($totalRevenue, 0) }}</h5>
+                                                </div>
+                                            </div>
+                                            <div class="col-md-4">
+                                                <div class="text-center">
+                                                    <h6 class="text-muted">Avg Order Value</h6>
+                                                    <h5 class="text-info">${{ number_format($avgOrderValue, 0) }}</h5>
+                                                </div>
+                                            </div>
+                                            <div class="col-md-4">
+                                                <div class="text-center">
+                                                    <h6 class="text-muted">Total Customers</h6>
+                                                    <h5 class="text-primary">{{ count($customerSegments['customers']) }}</h5>
+                                                </div>
+                                            </div>
+                                        </div>
+                                        <div class="mt-3">
+                                            <a href="{{ route('retailer.customer-segments') }}" class="btn btn-outline-primary btn-sm">
+                                                <i class="bi bi-graph-up me-1"></i>View Detailed Analysis
+                                            </a>
+                                            <a href="{{ route('retailer.recommendations') }}" class="btn btn-outline-success btn-sm ms-2">
+                                                <i class="bi bi-lightbulb me-1"></i>Personalized Recommendations
+                                            </a>
+                                        </div>
+                                    @else
+                                        <p class="text-muted">No customer segmentation data available.</p>
+                                        <a href="{{ route('retailer.run-segmentation') }}" class="btn btn-primary btn-sm">
+                                            <i class="bi bi-play-circle me-1"></i>Run Segmentation Analysis
+                                        </a>
+                                    @endif
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    @endif
 
             <div class="row">
                 <div class="col-md-8">

@@ -356,7 +356,8 @@
             }" x-init="
                 loadNotifications();
                 loadNotificationList();
-                setInterval(() => { loadNotifications(); loadNotificationList(); }, 30000);
+                setInterval(loadNotifications, 30000);
+                setInterval(loadNotificationList, 30000);
             ">
                 <button @click="open = !open" class="relative">
                     <i class="fas fa-bell text-gray-300 text-xl cursor-pointer hover:text-white transition-colors"></i>

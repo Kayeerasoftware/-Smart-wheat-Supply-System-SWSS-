@@ -435,3 +435,19 @@
     </div>
 </div>
 @endsection 
+
+@if(!empty($forecast))
+    <h3>My Demand Forecast (Next 6 Months)</h3>
+    <table>
+        <tr>
+            <th>Month</th>
+            <th>Forecasted Demand</th>
+        </tr>
+        @foreach($forecast['dates'] as $i => $month)
+            <tr>
+                <td>{{ $month }}</td>
+                <td>{{ number_format($forecast['values'][$i], 2) }}</td>
+            </tr>
+        @endforeach
+    </table>
+@endif 

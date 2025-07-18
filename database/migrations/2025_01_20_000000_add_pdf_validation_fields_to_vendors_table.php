@@ -12,30 +12,31 @@ return new class extends Migration
     public function up(): void
     {
         Schema::table('vendors', function (Blueprint $table) {
-            // Only add columns that don't already exist
-            if (!Schema::hasColumn('vendors', 'processing_status')) {
-                $table->string('processing_status')->default('pending_review')->after('status');
+            // First, add image_paths if it doesn't exist
+            if (!Schema::hasColumn('vendors', 'image_paths')) {
+                $table->json('image_paths')->nullable()->after('pdf_paths');
             }
             
-            // image_paths already exists from previous migration
-            // if (!Schema::hasColumn('vendors', 'image_paths')) {
-            //     $table->json('image_paths')->nullable()->after('pdf_paths');
-            // }
-            
+            // Then add pdf_validation_result
             if (!Schema::hasColumn('vendors', 'pdf_validation_result')) {
                 $table->json('pdf_validation_result')->nullable()->after('image_paths');
             }
             
-            if (!Schema::hasColumn('vendors', 'facility_visit_scheduled')) {
-                $table->boolean('facility_visit_scheduled')->default(false)->after('pdf_validation_result');
+            // Add scoring columns if they don't exist
+            if (!Schema::hasColumn('vendors', 'score_financial')) {
+                $table->integer('score_financial')->default(0)->after('pdf_validation_result');
             }
             
-            if (!Schema::hasColumn('vendors', 'facility_visit_date')) {
-                $table->timestamp('facility_visit_date')->nullable()->after('facility_visit_scheduled');
+            if (!Schema::hasColumn('vendors', 'score_reputation')) {
+                $table->integer('score_reputation')->default(0)->after('score_financial');
             }
             
-            if (!Schema::hasColumn('vendors', 'facility_visit_notes')) {
-                $table->text('facility_visit_notes')->nullable()->after('facility_visit_date');
+            if (!Schema::hasColumn('vendors', 'score_compliance')) {
+                $table->integer('score_compliance')->default(0)->after('score_reputation');
+            }
+            
+            if (!Schema::hasColumn('vendors', 'total_score')) {
+                $table->integer('total_score')->default(0)->after('score_compliance');
             }
         });
     }
@@ -47,11 +48,11 @@ return new class extends Migration
     {
         Schema::table('vendors', function (Blueprint $table) {
             $table->dropColumn([
-                'processing_status',
                 'pdf_validation_result',
-                'facility_visit_scheduled',
-                'facility_visit_date',
-                'facility_visit_notes'
+                'score_financial',
+                'score_reputation', 
+                'score_compliance',
+                'total_score'
             ]);
         });
     }

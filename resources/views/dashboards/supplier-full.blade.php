@@ -523,6 +523,7 @@
         </div>
     </nav>
 
+    <div x-data="{ activeTab: 'overview' }">
     <!-- Sidebar -->
     <aside class="sidebar w-64 p-6" id="sidebar">
         <nav class="space-y-2">
@@ -546,6 +547,14 @@
                 <i class="fas fa-chart-bar w-5"></i>
                 <span class="font-medium">Reports</span>
             </a>
+                <a href="#" @click.prevent="activeTab = 'analytics'" class="sidebar-item flex items-center space-x-3 px-4 py-3 rounded-lg text-gray-300">
+                    <i class="fas fa-chart-line w-5"></i>
+                    <span class="font-medium">Analytics</span>
+                </a>
+                <a href="#" @click.prevent="activeTab = 'performance'" class="sidebar-item flex items-center space-x-3 px-4 py-3 rounded-lg text-gray-300">
+                    <i class="fas fa-trophy w-5"></i>
+                    <span class="font-medium">Performance</span>
+                </a>
             <a href="/contracts" class="sidebar-item flex items-center space-x-3 px-4 py-3 rounded-lg text-gray-300">
                 <i class="fas fa-handshake w-5"></i>
                 <span class="font-medium">Contracts</span>
@@ -563,7 +572,6 @@
                 <i class="fas fa-user-cog w-5"></i>
                 <span class="font-medium">Profile Settings</span>
             </a>
-            
             <div class="pt-6 mt-6 border-t border-gray-700">
                 <form action="{{ route('logout') }}" method="POST">
                     @csrf
@@ -577,25 +585,14 @@
     </aside>
 
     <!-- Main Content -->
-    <main class="main-content p-6" x-data="{ activeTab: 'overview' }">
+        <main class="main-content p-6">
         <!-- Header -->
         <div class="mb-8">
             <h1 class="text-4xl font-bold font-space mb-2 gradient-text">Supplier Dashboard</h1>
             <p class="text-xl text-gray-300">Full access granted. Welcome to your complete supplier portal!</p>
         </div>
 
-        <!-- Success Alert -->
-        <div class="glass-card p-6 mb-8 border-l-4 border-green-400">
-            <div class="flex items-center">
-                <div class="flex-shrink-0">
-                    <i class="fas fa-check-circle text-3xl text-green-400"></i>
-                </div>
-                <div class="ml-4">
-                    <h3 class="text-lg font-semibold text-white mb-1">Full Access Granted!</h3>
-                    <p class="text-gray-300">Congratulations! Your application has been approved. You now have full access to all supplier features.</p>
-                </div>
-            </div>
-        </div>
+
 
         <!-- Tab Navigation -->
         <div class="flex space-x-2 mb-6">
@@ -616,12 +613,6 @@
                     class="px-4 py-2 rounded-lg font-medium">
                 <i class="fas fa-shopping-cart mr-2"></i>
                 Orders
-            </button>
-            <button @click="activeTab = 'inventory'" 
-                    :class="activeTab === 'inventory' ? 'tab-button active' : 'tab-button'"
-                    class="px-4 py-2 rounded-lg font-medium">
-                <i class="fas fa-boxes mr-2"></i>
-                Inventory
             </button>
             <button @click="activeTab = 'performance'" 
                     :class="activeTab === 'performance' ? 'tab-button active' : 'tab-button'"
@@ -739,10 +730,6 @@
             <div class="glass-card p-6 mb-8">
                 <h3 class="text-xl font-semibold text-white mb-4">Quick Actions</h3>
                 <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
-                    <a href="{{ route('inventory.create') }}" class="btn-primary px-4 py-3 rounded-xl text-white text-center hover:scale-105 transition-transform">
-                        <i class="fas fa-plus text-lg mb-2"></i>
-                        <p class="font-medium">Add Inventory</p>
-                    </a>
                     
                     <a href="{{ route('orders.create') }}" class="btn-primary px-4 py-3 rounded-xl text-white text-center hover:scale-105 transition-transform">
                         <i class="fas fa-shopping-cart text-lg mb-2"></i>
@@ -1055,6 +1042,7 @@
             </div>
         </div>
     </main>
+    </div>
 
     <script>
         // Initialize inventory trend chart

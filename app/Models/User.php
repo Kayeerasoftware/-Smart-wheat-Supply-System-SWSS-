@@ -69,4 +69,9 @@ class User extends Authenticatable
     {
         return $this->hasMany(\App\Models\Activity::class, 'user_id', 'id');
     }
+
+    public function farmerInventory()
+    {
+        return $this->hasMany(\App\Models\FarmerInventory::class, 'farmer_id', 'id');
+    }
 }

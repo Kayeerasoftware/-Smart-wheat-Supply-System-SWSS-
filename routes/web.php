@@ -3,6 +3,8 @@
 use App\Http\Controllers\ProfileController;
 use App\Http\Controllers\DashboardController;
 use App\Http\Controllers\ManufacturerDashboardController;
+use App\Http\Controllers\FarmerDashboardController;
+use App\Http\Controllers\SupplierDashboardController;
 use Illuminate\Support\Facades\Route;
 use Illuminate\Support\Facades\Auth;
 use App\Http\Controllers\VendorController;
@@ -14,6 +16,8 @@ use App\Http\Controllers\InventoryController;
 use App\Http\Controllers\OrderController;
 use App\Http\Controllers\ChatController;
 use App\Http\Controllers\NotificationController;
+use App\Http\Controllers\DiscountController;
+use App\Http\Controllers\ContactController;
 
 Route::get('/', function () {
     return view('welcome');
@@ -53,22 +57,32 @@ Route::middleware('auth')->group(function () {
 
 Route::middleware('auth')->group(function () {
     Route::get('/admin/dashboard', [DashboardController::class, 'admin'])->name('admin.dashboard');
-    Route::get('/farmer/dashboard', [DashboardController::class, 'farmer'])->name('farmer.dashboard');
-    Route::get('/supplier/dashboard', [DashboardController::class, 'supplier'])->name('supplier.dashboard');
+    Route::get('/farmer/dashboard', [FarmerDashboardController::class, 'index'])->name('farmer.dashboard');
+    Route::get('/supplier/dashboard', [SupplierDashboardController::class, 'index'])->name('supplier.dashboard');
+    Route::post('/supplier/generate-forecast', [SupplierDashboardController::class, 'generateForecast'])->name('supplier.generate-forecast');
+    Route::post('/supplier/run-segmentation', [SupplierDashboardController::class, 'runCustomerSegmentation'])->name('supplier.run-segmentation');
     Route::get('/manufacturer/dashboard', [DashboardController::class, 'manufacturer'])->name('manufacturer.dashboard');
     Route::get('/distributor/dashboard', [DashboardController::class, 'distributor'])->name('distributor.dashboard');
-    Route::get('/retailer/dashboard', [DashboardController::class, 'retailer'])->name('retailer.dashboard');
+    Route::get('/retailer/dashboard', [RetailerDashboardController::class, 'index'])->name('retailer.dashboard');
+    
+    // Retailer Customer Segmentation Routes
+    Route::get('/retailer/customer-segments', [RetailerDashboardController::class, 'customerSegments'])->name('retailer.customer-segments');
+    Route::post('/retailer/run-segmentation', [RetailerDashboardController::class, 'runSegmentation'])->name('retailer.run-segmentation');
+    Route::get('/retailer/recommendations', [RetailerDashboardController::class, 'personalizedRecommendations'])->name('retailer.recommendations');
+    
     Route::get('/vendor/dashboard', [DashboardController::class, 'vendor'])->name('vendor.dashboard');
     Route::get('/vendor/application', [App\Http\Controllers\VendorController::class, 'showApplicationForm'])->name('vendor.application');
     Route::post('/vendor/application', [App\Http\Controllers\VendorController::class, 'submitApplication'])->name('vendor.application.submit');
     
     // Admin vendor management routes
-    Route::prefix('admin/vendors')->group(function () {
-        Route::post('/{vendor}/schedule-visit', [App\Http\Controllers\AdminController::class, 'scheduleFacilityVisit'])->name('admin.vendors.schedule-visit');
-        Route::post('/{vendor}/approve', [App\Http\Controllers\AdminController::class, 'approveVendor'])->name('admin.vendors.approve');
-        Route::post('/{vendor}/reject', [App\Http\Controllers\AdminController::class, 'rejectVendor'])->name('admin.vendors.reject');
-        Route::get('/{vendor}/details', [App\Http\Controllers\AdminController::class, 'viewVendorDetails'])->name('admin.vendors.details');
-        Route::put('/{vendor}/scores', [App\Http\Controllers\AdminController::class, 'updateVendorScores'])->name('admin.vendors.update-scores');
+    Route::middleware(['web', 'auth'])->prefix('admin/vendors')->group(function () {
+        Route::post('/{vendorId}/schedule-visit', [App\Http\Controllers\AdminController::class, 'scheduleFacilityVisit'])->name('admin.vendors.schedule-visit');
+        Route::post('/{vendorId}/approve', [App\Http\Controllers\AdminController::class, 'approveVendor'])->name('admin.vendors.approve');
+        Route::post('/{vendorId}/reject', [App\Http\Controllers\AdminController::class, 'rejectVendor'])->name('admin.vendors.reject');
+        Route::get('/{vendorId}/details', [App\Http\Controllers\AdminController::class, 'viewVendorDetails'])->name('admin.vendors.details');
+        Route::put('/{vendorId}/scores', [App\Http\Controllers\AdminController::class, 'updateVendorScores'])->name('admin.vendors.update-scores');
+        Route::post('/check-visits', [App\Http\Controllers\AdminController::class, 'checkVisits'])->name('admin.vendors.check-visits');
+        Route::post('/{vendorId}/complete-visit', [App\Http\Controllers\AdminController::class, 'completeVisit'])->name('admin.vendors.complete-visit');
     });
 
     // Vendor routes
@@ -122,7 +136,7 @@ Route::middleware('auth')->group(function () {
     // Inventory Management Routes
     Route::middleware('auth')->prefix('inventory')->name('inventory.')->group(function () {
         Route::get('/', [InventoryController::class, 'index'])->name('index');
-        Route::get('/create', [InventoryController::class, 'create'])->name('create');
+        // Route::get('/create', [InventoryController::class, 'create'])->name('create');
         Route::post('/', [InventoryController::class, 'store'])->name('store');
         Route::get('/{inventory}', [InventoryController::class, 'show'])->name('show');
         Route::get('/{inventory}/edit', [InventoryController::class, 'edit'])->name('edit');
@@ -142,6 +156,7 @@ Route::middleware('auth')->group(function () {
         Route::get('/{order}/edit', [OrderController::class, 'edit'])->name('edit');
         Route::put('/{order}', [OrderController::class, 'update'])->name('update');
         Route::delete('/{order}', [OrderController::class, 'destroy'])->name('destroy');
+        Route::get('/quick-create/{farmerId}/{productId}', [OrderController::class, 'quickCreate'])->name('quick-create');
     });
 
     // Supplier Deliveries Routes
@@ -184,14 +199,13 @@ Route::middleware('auth')->group(function () {
     // Chat Routes
     Route::middleware('auth')->prefix('chat')->name('chat.')->group(function () {
         Route::get('/', [ChatController::class, 'index'])->name('index');
-        Route::post('/send-message', [ChatController::class, 'sendMessage'])->name('send-message');
-        Route::get('/user/{id}', [ChatController::class, 'getUserDetails'])->name('user-details');
-        Route::get('/online-users', [ChatController::class, 'getOnlineUsers'])->name('online-users');
-        // New chat API routes
+        Route::get('/user/{userId}', [ChatController::class, 'getUserDetails'])->name('user.details');
+        Route::get('/online-users', [ChatController::class, 'getOnlineUserIds'])->name('online.users');
         Route::get('/contacts', [ChatController::class, 'listChatUsers'])->name('contacts');
-        Route::get('/messages/{userId}', [ChatController::class, 'fetchMessages'])->name('fetch-messages');
+        Route::get('/messages/{userId}', [ChatController::class, 'fetchMessages'])->name('messages');
+        Route::post('/send-message', [ChatController::class, 'sendMessage'])->name('send-message');
         Route::get('/unread-counts', [ChatController::class, 'getUnreadCounts'])->name('unread-counts');
-        Route::post('/typing', [ChatController::class, 'setTyping'])->name('typing');
+        Route::post('/typing', [ChatController::class, 'setTyping'])->name('set-typing');
         Route::get('/typing', [ChatController::class, 'getTyping'])->name('get-typing');
     });
 
@@ -239,6 +253,8 @@ Route::middleware('auth')->group(function () {
         
         // Configuration actions
         Route::patch('/configuration', [App\Http\Controllers\AdminSystemSettingsController::class, 'updateConfiguration'])->name('update-configuration');
+        Route::get('/ml-settings', [\App\Http\Controllers\AdminSystemSettingsController::class, 'showMLSettings'])->name('ml-settings');
+        Route::post('/ml-settings', [\App\Http\Controllers\AdminSystemSettingsController::class, 'updateMLSettings'])->name('update-ml-settings');
     });
 
     // Admin Reports Routes
@@ -252,6 +268,7 @@ Route::middleware('auth')->group(function () {
         Route::post('/export/pdf', [App\Http\Controllers\AdminReportsController::class, 'exportPdf'])->name('export-pdf');
         Route::post('/export/excel', [App\Http\Controllers\AdminReportsController::class, 'exportExcel'])->name('export-excel');
         Route::post('/export/csv', [App\Http\Controllers\AdminReportsController::class, 'exportCsv'])->name('export-csv');
+        Route::post('/save-delivery-settings', [App\Http\Controllers\AdminReportsController::class, 'saveDeliverySettings'])->name('save-delivery-settings');
     });
 
     // Admin Audit Logs Routes
@@ -270,11 +287,22 @@ Route::middleware('auth')->group(function () {
         Route::get('/real-time', [App\Http\Controllers\AdminAuditLogsController::class, 'realTimeLogs'])->name('real-time');
         Route::post('/clear-old', [App\Http\Controllers\AdminAuditLogsController::class, 'clearOldLogs'])->name('clear-old');
     });
+
+    // Analytics routes
+    Route::prefix('analytics')->name('analytics.')->group(function () {
+        Route::get('/customer-segments', [\App\Http\Controllers\AdminAnalyticsController::class, 'customerSegments'])->name('customer-segments');
+        Route::post('/run-segmentation', [\App\Http\Controllers\AdminAnalyticsController::class, 'runSegmentation'])->name('run-segmentation');
+    });
 });
 
 // Manufacturer Routes
 Route::middleware(['auth', 'role:manufacturer'])->prefix('manufacturer')->name('manufacturer.')->group(function () {
     Route::get('/dashboard', [ManufacturerDashboardController::class, 'index'])->name('dashboard');
+    
+    // Customer Segmentation
+    Route::get('/customer-segments', [ManufacturerDashboardController::class, 'customerSegments'])->name('customer-segments');
+    Route::post('/run-segmentation', [ManufacturerDashboardController::class, 'runSegmentation'])->name('run-segmentation');
+    Route::get('/production-insights', [ManufacturerDashboardController::class, 'productionInsights'])->name('production-insights');
     
     // Production Lines
     Route::get('/production-lines', [ManufacturerDashboardController::class, 'productionLines'])->name('production-lines');
@@ -299,7 +327,13 @@ Route::middleware(['auth', 'role:manufacturer'])->prefix('manufacturer')->name('
 
     // Orders
     Route::get('/orders/create', [ManufacturerDashboardController::class, 'createOrder'])->name('orders.create');
-    Route::post('/orders', [ManufacturerDashboardController::class, 'storeOrder'])->name('orders.store');
+});
+
+// Discount routes
+Route::middleware('auth')->prefix('discounts')->name('discounts.')->group(function () {
+    Route::get('/', [\App\Http\Controllers\DiscountController::class, 'showDiscounts'])->name('index');
+    Route::post('/apply', [\App\Http\Controllers\DiscountController::class, 'applyDiscount'])->name('apply');
+    Route::post('/calculate', [\App\Http\Controllers\DiscountController::class, 'runDiscountCalculation'])->name('calculate');
 });
 
 // Temporary test route for inventory create view
@@ -332,4 +366,81 @@ Route::get('/admin/dashboard/export/csv', [App\Http\Controllers\AdminController:
 
 Route::get('/admin/dashboard/performance-data', [App\Http\Controllers\AdminController::class, 'getSystemPerformanceData'])->name('admin.dashboard.performance-data');
 
+// Farmer inventory routes
+Route::middleware(['auth', 'role:farmer'])->prefix('farmer/inventory')->name('farmer.inventory.')->group(function () {
+    Route::get('/', [\App\Http\Controllers\FarmerInventoryController::class, 'index'])->name('index');
+    Route::get('/create', [\App\Http\Controllers\FarmerInventoryController::class, 'create'])->name('create');
+    Route::post('/', [\App\Http\Controllers\FarmerInventoryController::class, 'store'])->name('store');
+    Route::get('/{inventory}/edit', [\App\Http\Controllers\FarmerInventoryController::class, 'edit'])->name('edit');
+    Route::put('/{inventory}', [\App\Http\Controllers\FarmerInventoryController::class, 'update'])->name('update');
+});
+
+// Farmer Orders Routes
+Route::middleware(['auth', 'role:farmer'])->prefix('farmer/orders')->name('farmer.orders.')->group(function () {
+    Route::get('/', [\App\Http\Controllers\FarmerOrderController::class, 'index'])->name('index');
+});
+
+// Supplier dashboard routes
+Route::middleware(['auth', 'role:supplier'])->group(function () {
+    Route::get('/supplier/dashboard', [SupplierDashboardController::class, 'index'])->name('supplier.dashboard');
+    Route::get('/supplier/validation-failed', function () {
+        $user = Auth::user();
+        $vendor = \App\Models\Vendor::where('user_id', $user->id)->first();
+        return view('dashboards.supplier-validation-failed', compact('vendor'));
+    })->name('supplier.validation-failed');
+    
+    Route::get('/supplier/limited-access', function () {
+        $user = Auth::user();
+        $vendor = \App\Models\Vendor::where('user_id', $user->id)->first();
+        return view('dashboards.supplier-limited-access', compact('vendor'));
+    })->name('supplier.limited-access');
+    
+    Route::get('/supplier/resubmit', function () {
+        return view('supplier.resubmit');
+    })->name('supplier.resubmit');
+    
+    Route::post('/supplier/resubmit', [SupplierDashboardController::class, 'resubmitApplication'])->name('supplier.resubmit.store');
+    
+    Route::get('/supplier/contact-support', function () {
+        $user = Auth::user();
+        $vendor = \App\Models\Vendor::where('user_id', $user->id)->first();
+        return view('supplier.contact-support', compact('user', 'vendor'));
+    })->name('supplier.contact-support');
+    
+    Route::post('/supplier/contact-support', [SupplierDashboardController::class, 'storeContactSupport'])->name('supplier.contact-support.store');
+    
+    Route::get('/supplier/update-info', function () {
+        $user = Auth::user();
+        $vendor = \App\Models\Vendor::where('user_id', $user->id)->first();
+        return view('supplier.update-info', compact('user', 'vendor'));
+    })->name('supplier.update-info');
+    
+    Route::post('/supplier/update-info', [SupplierDashboardController::class, 'storeUpdateInfo'])->name('supplier.update-info.store');
+    
+    Route::get('/supplier/rejected', function () {
+        $user = Auth::user();
+        $vendor = \App\Models\Vendor::where('user_id', $user->id)->first();
+        return view('supplier.rejected', compact('user', 'vendor'));
+    })->name('supplier.rejected');
+    
+    Route::post('/supplier/create-order-from-insight', [SupplierDashboardController::class, 'createOrderFromInsight'])
+        ->name('supplier.create-order-from-insight');
+    
+    Route::get('/supplier/download-report', [SupplierDashboardController::class, 'downloadProgressReport'])
+        ->name('supplier.download-report');
+});
+
+// Supplier Analytics and Performance Routes
+Route::middleware(['auth', 'role:supplier'])->prefix('supplier')->name('supplier.')->group(function () {
+    Route::get('/analytics', [\App\Http\Controllers\Supplier\AnalyticsController::class, 'index'])->name('analytics');
+    Route::get('/performance', [\App\Http\Controllers\Supplier\PerformanceController::class, 'index'])->name('performance');
+});
+
 require __DIR__.'/auth.php';
+
+Route::post('/notifications/mark-read/{id}', [App\Http\Controllers\NotificationController::class, 'markRead'])->name('notifications.mark-read');
+
+// Farmer analytics route
+Route::get('/farmer/analytics', [App\Http\Controllers\FarmerDashboardController::class, 'analytics'])->name('farmer.analytics');
+
+Route::post('/contact', [ContactController::class, 'store'])->name('contact.store');

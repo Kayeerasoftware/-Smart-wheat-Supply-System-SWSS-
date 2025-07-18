@@ -35,9 +35,7 @@
             </div>
         </div>
         <div class="flex items-center space-x-6">
-            <div class="relative">
-                <i class="fas fa-bell text-gray-300 text-xl cursor-pointer hover:text-white transition-colors"></i>
-            </div>
+            <x-admin-notification-dropdown />
             <div class="flex items-center space-x-3">
                 <div class="text-right">
                     <p class="text-sm font-semibold">{{ Auth::user()->name ?? 'Admin' }}</p>

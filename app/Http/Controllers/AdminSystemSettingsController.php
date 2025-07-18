@@ -444,4 +444,26 @@ class AdminSystemSettingsController extends Controller
 
         return $recommendations;
     }
+
+    public function showMLSettings()
+    {
+        $interval = config('ml.forecast_interval_days');
+        return view('admin.system-settings.ml', compact('interval'));
+    }
+
+    public function updateMLSettings(Request $request)
+    {
+        $request->validate([
+            'forecast_interval_days' => 'required|integer|min:1|max:365',
+        ]);
+        $path = config_path('ml.php');
+        $content = file_get_contents($path);
+        $content = preg_replace(
+            "/'forecast_interval_days'\s*=>\s*\d+/",
+            "'forecast_interval_days' => {$request->forecast_interval_days}",
+            $content
+        );
+        file_put_contents($path, $content);
+        return redirect()->back()->with('success', 'Forecast interval updated!');
+    }
 } 

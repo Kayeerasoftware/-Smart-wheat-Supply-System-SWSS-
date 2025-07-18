@@ -22,11 +22,12 @@ class DashboardController extends BaseController
         $user = Auth::user();
         $role = $user->role;
 
-        // Get recent activity for the user
-        $recentActivity = Activity::where('user_id', $user->user_id)
-            ->latest()
-            ->take(5)
-            ->get();
+        // Get recent activity for the user or system
+        if ($role === 'admin') {
+            $recentActivity = Activity::orderBy('created_at', 'desc')->take(10)->get();
+        } else {
+            $recentActivity = Activity::where('user_id', $user->id)->latest()->take(5)->get();
+        }
 
         // Common data for all roles
         $data = [
@@ -36,9 +37,12 @@ class DashboardController extends BaseController
         // Role-specific data
         switch ($role) {
             case 'admin':
-                $data['totalUsers'] = User::count();
-                $data['activeUsers'] = User::where('status', 'active')->count();
-                $data['pendingApprovals'] = User::where('status', 'pending')->count();
+                $totalUsers = User::count();
+                $activeUsers = User::where('status', 'active')->count();
+                $pendingApprovals = User::where('status', 'pending')->count();
+                $data['totalUsers'] = max(0, $totalUsers);
+                $data['activeUsers'] = max(0, $activeUsers);
+                $data['pendingApprovals'] = max(0, $pendingApprovals);
                 $data['vendorApplications'] = Vendor::with('user')->orderBy('created_at', 'desc')->get();
                 $data['pendingVendorApplications'] = Vendor::where('status', 'pending')->count();
                 return view('dashboards.admin', $data);
@@ -51,81 +55,7 @@ class DashboardController extends BaseController
                 return view('dashboards.farmer', $data);
 
             case 'supplier':
-                $vendor = Vendor::where('user_id', $user->id)->with('facilityVisits')->first();
-                $data['vendor'] = $vendor;
-                $query = \App\Models\Inventory::with(['product', 'warehouse'])
-                    ->whereHas('product', function($query) use ($user) {
-                        $query->where('supplier_id', $user->id);
-                    });
-                // Filtering
-                if ($request->filled('search')) {
-                    $search = $request->input('search');
-                    $query->whereHas('product', function($q) use ($search) {
-                        $q->where('name', 'like', "%$search%")
-                          ->orWhere('sku', 'like', "%$search%") ;
-                    });
-                }
-                if ($request->filled('warehouse')) {
-                    $query->where('warehouse_id', $request->input('warehouse'));
-                }
-                if ($request->filled('status')) {
-                    $status = $request->input('status');
-                    if ($status === 'low') {
-                        $query->where('quantity_available', '<=', 10)->where('quantity_available', '>', 0);
-                    } elseif ($status === 'out') {
-                        $query->where('quantity_available', '<=', 0);
-                    } elseif ($status === 'in') {
-                        $query->where('quantity_available', '>', 10);
-                    }
-                }
-                $supplierInventory = $query->get();
-                $data['supplierInventory'] = $supplierInventory;
-                $data['filteredInventory'] = $supplierInventory;
-                
-                // Calculate statistics
-                $data['totalInventory'] = $supplierInventory->sum('quantity_on_hand');
-                $data['lowStockItems'] = $supplierInventory->where('quantity_available', '<=', 10)->where('quantity_available', '>', 0)->count();
-                $data['outOfStockItems'] = $supplierInventory->where('quantity_available', '<=', 0)->count();
-                $data['totalInventoryValue'] = $supplierInventory->sum(function($inv) { 
-                    return $inv->quantity_on_hand * ($inv->product->cost_price ?? 0); 
-                });
-                
-                $data['warehouses'] = \App\Models\Warehouse::all();
-                $data['activeOrders'] = 0; // Replace with actual query
-                $data['pendingDeliveries'] = 0; // Replace with actual query
-                $data['filter_search'] = $request->input('search');
-                $data['filter_warehouse'] = $request->input('warehouse');
-                $data['filter_status'] = $request->input('status');
-                
-                // Generate inventory trend data for the last 30 days
-                $trendData = [];
-                for ($i = 29; $i >= 0; $i--) {
-                    $date = now()->subDays($i);
-                    $dayKey = $date->format('Y-m-d');
-                    
-                    // For demo purposes, we'll simulate trend data based on current inventory
-                    // In a real application, you'd have inventory movement history
-                    $baseQuantity = $supplierInventory->sum('quantity_on_hand');
-                    $variation = rand(-50, 50); // Simulate daily variation
-                    $dayQuantity = max(0, $baseQuantity + $variation);
-                    
-                    $trendData[] = [
-                        'date' => $date->format('M d'),
-                        'total_quantity' => $dayQuantity,
-                        'total_value' => $dayQuantity * ($supplierInventory->avg(function($inv) { 
-                            return $inv->product->cost_price ?? 0; 
-                        }) ?? 0),
-                        'low_stock_count' => $supplierInventory->where('quantity_available', '<=', 10)->where('quantity_available', '>', 0)->count(),
-                        'out_of_stock_count' => $supplierInventory->where('quantity_available', '<=', 0)->count(),
-                    ];
-                }
-                $data['inventoryTrendData'] = $trendData;
-                
-                // Add facility visit data for notifications
-                $data['scheduledVisits'] = $vendor->facilityVisits->where('status', 'scheduled');
-                $data['pendingVisits'] = $vendor->facilityVisits->where('status', 'pending');
-                
-                return view('dashboards.supplier', $data);
+                return $this->supplier($request);
 
             case 'manufacturer':
                 $data['activeLines'] = 0; // Replace with actual query
@@ -151,7 +81,9 @@ class DashboardController extends BaseController
                 $data['todaySales'] = 0.00; // Replace with actual query
                 $data['activeOrders'] = 0; // Replace with actual query
                 $data['lowStockItems'] = 0; // Replace with actual query
-                $data['totalInventory'] = 0; // Replace with actual query
+                $data['totalInventory'] = \App\Models\Inventory::whereHas('product', function($query) {
+                    $query->where('type', 'processed');
+                })->sum('quantity_available') ?? 0;
                 return view('dashboards.retailer', $data);
 
             case 'vendor':
@@ -188,9 +120,56 @@ class DashboardController extends BaseController
             return redirect()->route('login')->with('error', 'Vendor profile not found.');
         }
 
+        // Auto-complete overdue visits
+        $overdueVisits = $vendor->facilityVisits()
+            ->where('status', 'scheduled')
+            ->where('scheduled_at', '<=', now()->subMinute())
+            ->get();
+
+        foreach ($overdueVisits as $visit) {
+            $visit->update([
+                'status' => 'completed',
+                'outcome' => 'pending_review'
+            ]);
+            $vendor->update([
+                'status' => 'visit_completed',
+                'processing_status' => 'visit_completed'
+            ]);
+            
+            \Log::info('Auto-completed overdue visit', [
+                'visit_id' => $visit->id,
+                'vendor_id' => $vendor->id,
+                'scheduled_at' => $visit->scheduled_at
+            ]);
+        }
+
+        // Debug information
+        \Log::info('Supplier dashboard access check', [
+            'user_id' => $user->id,
+            'user_role' => $user->role,
+            'vendor_id' => $vendor->id,
+            'vendor_status' => $vendor->status,
+            'has_full_access' => $vendor->hasFullAccess(),
+            'has_basic_access' => $vendor->hasBasicAccess(),
+            'latest_visit' => $vendor->facilityVisits()->latest()->first() ? [
+                'status' => $vendor->facilityVisits()->latest()->first()->status,
+                'outcome' => $vendor->facilityVisits()->latest()->first()->outcome,
+                'updated_at' => $vendor->facilityVisits()->latest()->first()->updated_at
+            ] : 'no_visit'
+        ]);
+
         // Check access level based on vendor status
         $hasFullAccess = $vendor->hasFullAccess();
         $hasBasicAccess = $vendor->hasBasicAccess();
+        
+        // Check if vendor was recently approved (within last 24 hours)
+        $recentlyApproved = false;
+        if ($vendor->status === 'approved') {
+            $latestVisit = $vendor->facilityVisits()->latest()->first();
+            if ($latestVisit && $latestVisit->outcome === 'approved' && $latestVisit->updated_at->diffInHours(now()) <= 24) {
+                $recentlyApproved = true;
+            }
+        }
         
         // Get recent activity
         $recentActivity = Activity::where('user_id', $user->id)
@@ -204,6 +183,7 @@ class DashboardController extends BaseController
             'hasFullAccess' => $hasFullAccess,
             'hasBasicAccess' => $hasBasicAccess,
             'statusMessage' => $vendor->getStatusMessage(),
+            'recentlyApproved' => $recentlyApproved,
         ];
 
         // If PDF validation failed, show limited dashboard
@@ -311,7 +291,17 @@ class DashboardController extends BaseController
         $data['scheduledVisits'] = $vendor->facilityVisits->where('status', 'scheduled');
         $data['pendingVisits'] = $vendor->facilityVisits->where('status', 'pending');
         
-        return view('dashboards.supplier-full', $data);
+        // Check if vendor was recently approved (within last 24 hours)
+        $recentlyApproved = false;
+        if ($vendor->status === 'approved') {
+            $latestVisit = $vendor->facilityVisits()->latest()->first();
+            if ($latestVisit && $latestVisit->outcome === 'approved' && $latestVisit->updated_at->diffInHours(now()) <= 24) {
+                $recentlyApproved = true;
+            }
+        }
+        $data['recentlyApproved'] = $recentlyApproved;
+        
+        return view('dashboards.supplier', $data);
     }
 
     public function manufacturer(Request $request)
@@ -927,81 +917,94 @@ class DashboardController extends BaseController
     public function profileSettings(Request $request)
     {
         $user = Auth::user();
-        
-        try {
-            // Get saved preferences from session
-            $savedPreferences = session('user_preferences', []);
+        $vendor = \App\Models\Vendor::where('user_id', $user->id)->first();
+        $applicationData = $vendor && is_array($vendor->application_data) ? $vendor->application_data : [];
+
+        // Stats: Orders, Contracts, Revenue
+        $totalOrders = 0;
+        $totalContracts = 0;
+        $totalRevenue = 0;
+        if ($vendor) {
+            $totalOrders = \App\Models\Order::where('vendor_id', $vendor->id)->count();
+            $totalContracts = \App\Models\PurchaseOrder::where('vendor_id', $vendor->id)->count();
+            $totalRevenue = \App\Models\Order::where('vendor_id', $vendor->id)->sum('total_amount') +
+                \App\Models\PurchaseOrder::where('vendor_id', $vendor->id)->sum('total_amount');
+        }
+
+        // Load contact preferences from user column
+        $contactPreferences = is_array($user->contact_preferences) ? $user->contact_preferences : [
+            'email_notifications' => true,
+            'sms_notifications' => false,
+            'push_notifications' => true,
+            'marketing_emails' => false,
+            'order_updates' => true,
+            'payment_reminders' => true,
+            'system_alerts' => true
+        ];
             
-            // Get user profile data
+        // Load security settings from user columns
+        $loginHistory = \App\Models\Activity::where('user_id', $user->id)
+            ->where('type', 'login')
+            ->orderByDesc('created_at')
+            ->take(5)
+            ->get()
+            ->map(function ($activity) {
+                return [
+                    'date' => $activity->created_at->toDateTimeString(),
+                    'ip' => $activity->ip_address ?? 'N/A',
+                    'device' => $activity->description ?? 'Unknown Device',
+                ];
+            })->toArray();
+        $securitySettings = [
+            'two_factor_enabled' => (bool) $user->two_factor_enabled,
+            'last_password_change' => $user->last_password_change ? $user->last_password_change->format('Y-m-d') : null,
+            'last_login' => $user->last_login ? $user->last_login->format('Y-m-d H:i:s') : null,
+            'login_history' => $loginHistory
+        ];
+
             $profileData = [
                 'personal_info' => [
-                    'name' => $savedPreferences['name'] ?? $user->name ?? 'John Supplier',
-                    'email' => $savedPreferences['email'] ?? $user->email ?? 'john.supplier@swss.com',
-                    'phone' => $savedPreferences['phone'] ?? '+1 (555) 123-4567',
-                    'company' => 'Premium Wheat Suppliers Inc.',
-                    'position' => 'Senior Supplier Manager',
-                    'address' => $savedPreferences['address'] ?? '123 Wheat Street, Farmville, CA 90210',
-                    'website' => 'www.premiumwheatsuppliers.com',
-                    'bio' => $savedPreferences['bio'] ?? 'Experienced wheat supplier with over 10 years in the industry, specializing in premium quality wheat products for manufacturing and distribution.',
-                    'avatar' => 'https://ui-avatars.com/api/?name=' . urlencode($savedPreferences['name'] ?? $user->name ?? 'John Supplier') . '&background=667eea&color=fff&size=128'
+                'name' => $user->name ?? 'John Supplier',
+                'email' => $user->email ?? 'john.supplier@swss.com',
+                'phone' => $user->phone ?? '',
+                'address' => $user->address ?? '',
+                'bio' => $user->bio ?? '',
+                'position' => $user->position ?? 'Supplier',
+                'avatar' => $user->avatar ?? ('https://ui-avatars.com/api/?name=' . urlencode($user->name ?? 'John Supplier') . '&background=667eea&color=fff&size=128'),
+                'member_since' => $user->created_at ? $user->created_at->format('Y-m-d') : '',
                 ],
                 'business_info' => [
-                    'business_name' => $savedPreferences['business_name'] ?? 'Premium Wheat Suppliers Inc.',
-                    'business_type' => $savedPreferences['business_type'] ?? 'Corporation',
-                    'tax_id' => $savedPreferences['tax_id'] ?? '12-3456789',
-                    'registration_number' => $savedPreferences['registration_number'] ?? 'CA123456789',
-                    'founded_year' => $savedPreferences['founded_year'] ?? '2015',
-                    'employees' => '25-50',
-                    'annual_revenue' => '$2.5M - $5M',
-                    'certifications' => ['ISO 9001', 'HACCP', 'Organic Certified'],
-                    'specializations' => ['Premium Wheat', 'Organic Wheat', 'Durum Wheat', 'Whole Grain']
-                ],
-                'contact_preferences' => [
-                    'email_notifications' => $savedPreferences['email_notifications'] ?? true,
-                    'sms_notifications' => $savedPreferences['sms_notifications'] ?? false,
-                    'push_notifications' => $savedPreferences['push_notifications'] ?? true,
-                    'marketing_emails' => $savedPreferences['marketing_emails'] ?? false,
-                    'order_updates' => $savedPreferences['order_updates'] ?? true,
-                    'payment_reminders' => $savedPreferences['payment_reminders'] ?? true,
-                    'system_alerts' => $savedPreferences['system_alerts'] ?? true
-                ],
-                'security_settings' => [
-                    'two_factor_enabled' => true,
-                    'last_password_change' => '2024-10-15',
-                    'last_login' => now()->format('Y-m-d H:i:s'),
-                    'login_history' => [
-                        ['date' => '2024-11-25 14:30:00', 'ip' => '192.168.1.100', 'device' => 'Chrome on Windows'],
-                        ['date' => '2024-11-24 09:15:00', 'ip' => '192.168.1.100', 'device' => 'Chrome on Windows'],
-                        ['date' => '2024-11-23 16:45:00', 'ip' => '192.168.1.100', 'device' => 'Mobile Safari']
-                    ]
-                ],
+                'business_name' => $applicationData['business_name'] ?? '',
+                'business_type' => $applicationData['business_type'] ?? '',
+                'tax_id' => $applicationData['tax_id'] ?? '',
+                'registration_number' => $applicationData['registration_number'] ?? '',
+                'founded_year' => $applicationData['founded_year'] ?? '',
+                'employees' => $applicationData['employees'] ?? '',
+                'annual_revenue' => $applicationData['annual_revenue'] ?? '',
+                'certifications' => $applicationData['certifications'] ?? [],
+                'specializations' => $applicationData['specializations'] ?? [],
+            ],
+            'contact_preferences' => $contactPreferences,
+            'security_settings' => $securitySettings,
                 'account_stats' => [
-                    'member_since' => '2020-03-15',
-                    'total_orders' => 156,
-                    'total_contracts' => 12,
-                    'total_revenue' => 1250000.00,
-                    'average_rating' => 4.8,
-                    'response_time' => '2.3 hours',
-                    'on_time_delivery' => 98.5
+                'member_since' => $user->created_at ? $user->created_at->format('Y-m-d') : '',
+                'total_orders' => $totalOrders,
+                'total_contracts' => $totalContracts,
+                'total_revenue' => $totalRevenue,
+                'average_rating' => 4.8, // Placeholder
+                'response_time' => '2.3 hours', // Placeholder
+                'on_time_delivery' => 98.5 // Placeholder
                 ]
             ];
 
-        } catch (\Exception $e) {
-            $profileData = [
-                'personal_info' => [],
-                'business_info' => [],
-                'contact_preferences' => [],
-                'security_settings' => [],
-                'account_stats' => []
-            ];
-        }
-
+        // Optionally, merge in other sections as before (contact_preferences, security_settings, etc.)
         return view('profile-settings.index', compact('profileData'));
     }
 
     public function saveProfileSettings(Request $request)
     {
         $user = Auth::user();
+        $vendor = \App\Models\Vendor::where('user_id', $user->id)->first();
         
         try {
             // Validate the request
@@ -1016,6 +1019,10 @@ class DashboardController extends BaseController
                 'tax_id' => 'nullable|string|max:50',
                 'registration_number' => 'nullable|string|max:100',
                 'founded_year' => 'nullable|integer|min:1900|max:' . date('Y'),
+                'employees' => 'nullable|string|max:100',
+                'annual_revenue' => 'nullable|string|max:100',
+                'certifications' => 'nullable|array',
+                'specializations' => 'nullable|array',
                 'email_notifications' => 'boolean',
                 'sms_notifications' => 'boolean',
                 'push_notifications' => 'boolean',
@@ -1023,28 +1030,37 @@ class DashboardController extends BaseController
                 'order_updates' => 'boolean',
                 'payment_reminders' => 'boolean',
                 'system_alerts' => 'boolean',
+                'two_factor_enabled' => 'boolean',
             ]);
 
             // Update user basic information
             $user->update([
                 'name' => $request->input('name'),
                 'email' => $request->input('email'),
-            ]);
-
-            // Store additional profile data in user meta or separate table
-            // For now, we'll store it in a JSON column or use a simple approach
-            // In a real application, you might want to create separate tables for this data
-            
-            // Store preferences in session for now (in production, use database)
-            $preferences = [
                 'phone' => $request->input('phone'),
                 'address' => $request->input('address'),
                 'bio' => $request->input('bio'),
-                'business_name' => $request->input('business_name'),
-                'business_type' => $request->input('business_type'),
-                'tax_id' => $request->input('tax_id'),
-                'registration_number' => $request->input('registration_number'),
-                'founded_year' => $request->input('founded_year'),
+                'two_factor_enabled' => $request->boolean('two_factor_enabled'),
+            ]);
+
+            // Update business info in vendor's application_data JSON
+            if ($vendor) {
+                $applicationData = is_array($vendor->application_data) ? $vendor->application_data : [];
+                $applicationData['business_name'] = $request->input('business_name');
+                $applicationData['business_type'] = $request->input('business_type');
+                $applicationData['tax_id'] = $request->input('tax_id');
+                $applicationData['registration_number'] = $request->input('registration_number');
+                $applicationData['founded_year'] = $request->input('founded_year');
+                $applicationData['employees'] = $request->input('employees');
+                $applicationData['annual_revenue'] = $request->input('annual_revenue');
+                $applicationData['certifications'] = $request->input('certifications', []);
+                $applicationData['specializations'] = $request->input('specializations', []);
+                $vendor->application_data = $applicationData;
+                $vendor->save();
+            }
+
+            // Save contact preferences to user column
+            $user->contact_preferences = [
                 'email_notifications' => $request->boolean('email_notifications'),
                 'sms_notifications' => $request->boolean('sms_notifications'),
                 'push_notifications' => $request->boolean('push_notifications'),
@@ -1053,9 +1069,7 @@ class DashboardController extends BaseController
                 'payment_reminders' => $request->boolean('payment_reminders'),
                 'system_alerts' => $request->boolean('system_alerts'),
             ];
-
-            // Store in session for demonstration (in production, save to database)
-            session(['user_preferences' => $preferences]);
+            $user->save();
 
             return redirect()->back()->with('success', 'Profile settings saved successfully!');
 
@@ -1068,5 +1082,19 @@ class DashboardController extends BaseController
     {
         $vendors = \App\Models\Vendor::with('user')->orderBy('created_at', 'desc')->get();
         return view('admin.vendors', compact('vendors'));
+    }
+
+    public function showDashboard()
+    {
+        $user = auth()->user();
+        $role = $user->role;
+        $userId = $user->id;
+        $forecast = [];
+        $forecastPath = storage_path("app/public/forecasts/forecast_{$role}_{$userId}.json");
+        if (file_exists($forecastPath)) {
+            $forecast = json_decode(file_get_contents($forecastPath), true);
+        }
+        // ... existing dashboard logic ...
+        return view("dashboards.{$role}", compact('forecast', /* other variables */));
     }
 }

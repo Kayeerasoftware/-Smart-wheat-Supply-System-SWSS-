@@ -16,7 +16,7 @@ return new class extends Migration
             $table->string('order_number')->unique();
             $table->unsignedBigInteger('customer_id');
             $table->unsignedBigInteger('vendor_id')->nullable();
-            $table->enum('order_type', ['sale', 'purchase', 'transfer'])->default('sale');
+            $table->enum('order_type', ['purchase', 'return'])->default('purchase');
             $table->enum('status', [
                 'draft', 'pending', 'confirmed', 'processing', 
                 'shipped', 'delivered', 'cancelled', 'returned'

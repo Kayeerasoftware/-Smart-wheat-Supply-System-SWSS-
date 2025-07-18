@@ -356,7 +356,8 @@
             }" x-init="
                 loadNotifications();
                 loadNotificationList();
-                setInterval(() => { loadNotifications(); loadNotificationList(); }, 30000);
+                setInterval(loadNotifications, 30000);
+                setInterval(loadNotificationList, 30000);
             ">
                 <button @click="open = !open" class="relative">
                     <i class="fas fa-bell text-gray-300 text-xl cursor-pointer hover:text-white transition-colors"></i>
@@ -442,16 +443,51 @@
     <!-- Sidebar -->
     <aside class="sidebar w-64 p-6" id="sidebar">
         <nav class="space-y-2">
-            <a href="{{ route('supplier.dashboard') }}" class="sidebar-item active flex items-center space-x-3 px-4 py-3 rounded-lg text-white relative">
+            <a href="{{ route('supplier.dashboard') }}" class="sidebar-item flex items-center space-x-3 px-4 py-3 rounded-lg text-gray-300">
                 <i class="fas fa-tachometer-alt w-5"></i>
                 <span class="font-medium">Dashboard</span>
-                <span class="absolute -top-1 -right-1 w-3 h-3 bg-blue-400 rounded-full"></span>
             </a>
-            <a href="{{ route('chat.index') }}" class="sidebar-item flex items-center space-x-3 px-4 py-3 rounded-lg text-gray-300">
+            <a href="{{ route('inventory.index') }}" class="sidebar-item flex items-center space-x-3 px-4 py-3 rounded-lg text-gray-300">
+                <i class="fas fa-warehouse w-5"></i>
+                <span class="font-medium">Inventory</span>
+            </a>
+            <a href="{{ route('orders.index') }}" class="sidebar-item flex items-center space-x-3 px-4 py-3 rounded-lg text-gray-300">
+                <i class="fas fa-shopping-cart w-5"></i>
+                <span class="font-medium">Orders</span>
+            </a>
+            <a href="/deliveries" class="sidebar-item flex items-center space-x-3 px-4 py-3 rounded-lg text-gray-300">
+                <i class="fas fa-truck w-5"></i>
+                <span class="font-medium">Deliveries</span>
+            </a>
+            <a href="/reports" class="sidebar-item flex items-center space-x-3 px-4 py-3 rounded-lg text-gray-300">
+                <i class="fas fa-chart-bar w-5"></i>
+                <span class="font-medium">Reports</span>
+            </a>
+            <a href="/contracts" class="sidebar-item flex items-center space-x-3 px-4 py-3 rounded-lg text-gray-300">
+                <i class="fas fa-handshake w-5"></i>
+                <span class="font-medium">Contracts</span>
+            </a>
+            <a href="/payments" class="sidebar-item flex items-center space-x-3 px-4 py-3 rounded-lg text-gray-300">
+                <i class="fas fa-dollar-sign w-5"></i>
+                <span class="font-medium">Payments</span>
+            </a>
+            <a href="/chat" class="sidebar-item flex items-center space-x-3 px-4 py-3 rounded-lg text-gray-300 relative">
                 <i class="fas fa-comments w-5"></i>
-                <span class="font-medium">Chat with Admin</span>
+                <span class="font-medium">Chat</span>
+                <span class="notification-dot absolute -top-1 -right-1 w-3 h-3 rounded-full"></span>
             </a>
-            
+            <a href="/profile-settings" class="sidebar-item flex items-center space-x-3 px-4 py-3 rounded-lg text-gray-300">
+                <i class="fas fa-user-cog w-5"></i>
+                <span class="font-medium">Profile Settings</span>
+            </a>
+            <a href="{{ route('supplier.analytics') }}" class="sidebar-item flex items-center space-x-3 px-4 py-3 rounded-lg text-gray-300">
+                <i class="fas fa-chart-line w-5"></i>
+                <span class="font-medium">Analytics</span>
+            </a>
+            <a href="{{ route('supplier.performance') }}" class="sidebar-item flex items-center space-x-3 px-4 py-3 rounded-lg text-gray-300">
+                <i class="fas fa-trophy w-5"></i>
+                <span class="font-medium">Performance</span>
+            </a>
             <div class="pt-6 mt-6 border-t border-gray-700">
                 <form action="{{ route('logout') }}" method="POST">
                     @csrf
@@ -475,5 +511,6 @@
             document.getElementById('sidebar').classList.toggle('open');
         });
     </script>
+    @stack('scripts')
 </body>
 </html> 

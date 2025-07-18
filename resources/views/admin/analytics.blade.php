@@ -4,6 +4,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>SWSS Admin Analytics</title>
+    @vite(['resources/css/app.css', 'resources/js/app.js'])
     <script src="https://cdn.tailwindcss.com"></script>
     <link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@300;400;500;600;700&family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
     <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
@@ -198,10 +199,7 @@
         </div>
         
         <div class="flex items-center space-x-6">
-            <div class="relative">
-                <i class="fas fa-bell text-gray-300 text-xl cursor-pointer hover:text-white transition-colors"></i>
-                <span class="absolute -top-1 -right-1 w-3 h-3 rounded-full bg-gradient-to-r from-pink-500 to-rose-500"></span>
-            </div>
+            <x-admin-notification-dropdown />
             <div class="flex items-center space-x-3">
                 <div class="text-right">
                     <p class="text-sm font-semibold">{{ Auth::user()->username }}</p>

@@ -12,6 +12,7 @@ use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Auth;
 use Carbon\Carbon;
+use App\Models\ReportDeliverySetting;
 
 class AdminReportsController extends Controller
 {
@@ -125,6 +126,14 @@ class AdminReportsController extends Controller
                 'revenue_trends' => $this->getRevenueTrendsData($startDate, $endDate),
             ];
 
+            // Load delivery settings from DB
+            $user = auth()->user();
+            $setting = ReportDeliverySetting::where('user_id', $user->id)->first();
+            $deliverySettings = [
+                'frequency' => $setting->frequency ?? 'weekly',
+                'method' => $setting->method ?? 'notification',
+            ];
+
             return view('admin.reports.index', compact(
                 'userStats',
                 'activityStats',
@@ -135,7 +144,8 @@ class AdminReportsController extends Controller
                 'chartData',
                 'dateRange',
                 'startDate',
-                'endDate'
+                'endDate',
+                'deliverySettings' // pass to view
             ));
         } catch (\Exception $e) {
             // Return a simple error view or redirect with error message
@@ -331,5 +341,28 @@ class AdminReportsController extends Controller
             ->paginate(20);
 
         return view('admin.reports.vendor-report', compact('vendors'));
+    }
+
+    public function saveDeliverySettings(Request $request)
+    {
+        \Log::info('saveDeliverySettings called', [
+            'user_id' => auth()->id(),
+            'request' => $request->all()
+        ]);
+        $request->validate([
+            'frequency' => 'required|in:5min,daily,weekly,monthly',
+            'method' => 'required|in:notification,email,both',
+        ]);
+
+        $user = auth()->user();
+        ReportDeliverySetting::updateOrCreate(
+            ['user_id' => $user->id],
+            [
+                'frequency' => $request->frequency,
+                'method' => $request->method,
+            ]
+        );
+
+        return redirect()->back()->with('success', 'Report delivery settings saved!');
     }
 } 

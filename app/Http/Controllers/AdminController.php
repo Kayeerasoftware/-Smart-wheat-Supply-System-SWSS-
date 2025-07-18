@@ -19,70 +19,189 @@ class AdminController extends Controller
 {
     public function __construct()
     {
-        $this->middleware('auth');
         // $this->middleware('admin'); // TODO: Create admin middleware
+        
+        // Ensure AJAX requests return JSON
+        $this->middleware(function ($request, $next) {
+            if ($request->ajax() || $request->wantsJson()) {
+                $request->headers->set('Accept', 'application/json');
+            }
+            return $next($request);
+        });
+    }
+
+    /**
+     * Check and auto-complete facility visits that have passed their scheduled time
+     */
+    private function checkAndAutoCompleteVisits()
+    {
+        $overdueVisits = FacilityVisit::where('status', 'scheduled')
+            ->where('scheduled_at', '<=', now()->subMinute())
+            ->get();
+
+        foreach ($overdueVisits as $visit) {
+            $visit->update([
+                'status' => 'completed',
+                'outcome' => 'pending_review' // Admin needs to review and approve/reject
+            ]);
+
+            // Update vendor status to indicate visit is completed
+            $visit->vendor->update([
+                'status' => 'visit_completed',
+                'processing_status' => 'visit_completed'
+            ]);
+
+            \Log::info('Auto-completed facility visit', [
+                'visit_id' => $visit->id,
+                'vendor_id' => $visit->vendor_id,
+                'scheduled_at' => $visit->scheduled_at,
+                'completed_at' => now()
+            ]);
+        }
+
+        return $overdueVisits->count();
     }
 
     public function scheduleFacilityVisit(Request $request, $vendorId)
     {
-        $request->validate([
-            'scheduled_at' => 'required|date|after:today',
-            'notes' => 'nullable|string',
-        ]);
-
-        $vendor = Vendor::findOrFail($vendorId);
-        
-        // Create facility visit
-        $visit = FacilityVisit::create([
-            'vendor_id' => $vendor->id,
-            'scheduled_at' => $request->scheduled_at,
-            'status' => 'scheduled',
-            'notes' => $request->notes,
-        ]);
-
-        // Send notification to supplier
         try {
-            \App\Services\NotificationService::sendFacilityVisitNotification($visit, 'scheduled');
+            // Log the incoming request for debugging
+            \Log::info('Schedule visit request received', [
+                'vendor_id' => $vendorId,
+                'request_data' => $request->all(),
+                'headers' => $request->headers->all()
+            ]);
+
+            $request->validate([
+                'scheduled_at' => 'required|date|after:now',
+                'notes' => 'nullable|string',
+            ]);
+
+            $vendor = Vendor::findOrFail($vendorId);
+            
+            // Test basic database operations
+            \Log::info('Vendor found successfully', ['vendor_id' => $vendor->id, 'vendor_name' => $vendor->business_name]);
+            
+            // Create facility visit
+            $visit = FacilityVisit::create([
+                'vendor_id' => $vendor->id,
+                'scheduled_at' => $request->scheduled_at,
+                'status' => 'scheduled',
+                'notes' => $request->notes,
+            ]);
+            
+            \Log::info('Facility visit created successfully', ['visit_id' => $visit->id]);
+
+            // Send notification to supplier - TEMPORARILY DISABLED FOR DEBUGGING
+            /*
+            try {
+                \App\Services\NotificationService::sendFacilityVisitNotification($visit, 'scheduled');
+            } catch (\Exception $e) {
+                // Log error but don't fail the request
+                \Log::error('Failed to send facility visit notification: ' . $e->getMessage());
+            }
+            */
+
+            // Update vendor status
+            $vendor->update([
+                'status' => 'pending_visit',
+                'processing_status' => 'pending_visit'
+            ]);
+
+            \Log::info('Facility visit scheduled successfully', ['visit_id' => $visit->id]);
+
+            return response()->json([
+                'success' => true,
+                'message' => 'Facility visit scheduled successfully for ' . $vendor->business_name
+            ]);
+        } catch (\Illuminate\Validation\ValidationException $e) {
+            \Log::warning('Validation failed for schedule visit', ['errors' => $e->errors()]);
+            return response()->json([
+                'success' => false,
+                'message' => 'Validation failed',
+                'errors' => $e->errors()
+            ], 422);
+        } catch (\Illuminate\Database\Eloquent\ModelNotFoundException $e) {
+            \Log::warning('Vendor not found for schedule visit', ['vendor_id' => $vendorId]);
+            return response()->json([
+                'success' => false,
+                'message' => 'Vendor not found'
+            ], 404);
         } catch (\Exception $e) {
-            // Log error but don't fail the request
-            \Log::error('Failed to send facility visit notification: ' . $e->getMessage());
+            \Log::error('Error scheduling facility visit: ' . $e->getMessage(), [
+                'vendor_id' => $vendorId,
+                'trace' => $e->getTraceAsString()
+            ]);
+            return response()->json([
+                'success' => false,
+                'message' => 'An error occurred while scheduling the facility visit: ' . $e->getMessage()
+            ], 500);
         }
-
-        // Update vendor status
-        $vendor->update(['status' => 'pending_visit']);
-
-        return response()->json([
-            'success' => true,
-            'message' => 'Facility visit scheduled successfully'
-        ]);
     }
 
     public function approveVendor($vendorId)
     {
-        $vendor = Vendor::findOrFail($vendorId);
-        
-        DB::transaction(function () use ($vendor) {
-            // Update vendor status
-            $vendor->update(['status' => 'approved']);
+        try {
+            $vendor = Vendor::findOrFail($vendorId);
             
-            // Change user role from vendor to supplier
-            $user = $vendor->user;
-            $user->update(['role' => 'supplier']);
-            
-            // Update facility visit outcome
-            $latestVisit = $vendor->facilityVisits()->latest()->first();
-            if ($latestVisit) {
-                $latestVisit->update([
-                    'status' => 'completed',
-                    'outcome' => 'approved'
-                ]);
+            // Check if vendor is in a state that can be approved
+            if (!in_array($vendor->status, ['pending', 'visit_completed'])) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'Vendor cannot be approved in current status: ' . $vendor->status
+                ], 400);
             }
-        });
-
-        return response()->json([
-            'success' => true,
-            'message' => 'Vendor approved successfully. Role changed to supplier.'
-        ]);
+            
+            DB::transaction(function () use ($vendor) {
+                // Update vendor status to approved
+                $vendor->update([
+                    'status' => 'approved',
+                    'processing_status' => 'approved'
+                ]);
+                
+                // Update the latest facility visit outcome to approved
+                $latestVisit = $vendor->facilityVisits()->latest()->first();
+                if ($latestVisit) {
+                    $latestVisit->update([
+                        'status' => 'completed',
+                        'outcome' => 'approved',
+                        'completed_at' => now()
+                    ]);
+                }
+                
+                // Log the approval
+                \Log::info('Vendor approved successfully', [
+                    'vendor_id' => $vendor->id,
+                    'user_id' => $vendor->user_id,
+                    'approved_at' => now(),
+                    'latest_visit_id' => $latestVisit ? $latestVisit->id : null
+                ]);
+                
+                // TODO: Send approval notification to vendor
+                // TODO: Send notification to admin about new approved supplier
+            });
+            
+            return response()->json([
+                'success' => true,
+                'message' => 'Vendor approved successfully! They now have full access to the supplier dashboard.'
+            ]);
+            
+        } catch (\Illuminate\Database\Eloquent\ModelNotFoundException $e) {
+            \Log::error('Vendor not found for approval', ['vendor_id' => $vendorId]);
+            return response()->json([
+                'success' => false,
+                'message' => 'Vendor not found'
+            ], 404);
+        } catch (\Exception $e) {
+            \Log::error('Error approving vendor: ' . $e->getMessage(), [
+                'vendor_id' => $vendorId,
+                'trace' => $e->getTraceAsString()
+            ]);
+            return response()->json([
+                'success' => false,
+                'message' => 'An error occurred while approving the vendor: ' . $e->getMessage()
+            ], 500);
+        }
     }
 
     public function rejectVendor(Request $request, $vendorId)
@@ -119,11 +238,22 @@ class AdminController extends Controller
     {
         $vendor = Vendor::with(['user', 'facilityVisits'])->findOrFail($vendorId);
         
+        // Get business images if they exist
+        $businessImages = [];
+        if ($vendor->image_paths && is_array($vendor->image_paths)) {
+            foreach ($vendor->image_paths as $type => $path) {
+                if ($path && \Storage::disk('public')->exists($path)) {
+                    $businessImages[$type] = \Storage::disk('public')->url($path);
+                }
+            }
+        }
+        
         return response()->json([
             'success' => true,
             'vendor' => $vendor,
             'application_data' => $vendor->application_data,
             'pdf_paths' => $vendor->pdf_paths,
+            'business_images' => $businessImages,
             'facility_visits' => $vendor->facilityVisits,
             'scores' => [
                 'financial' => $vendor->score_financial,
@@ -164,8 +294,76 @@ class AdminController extends Controller
 
     public function vendors()
     {
+        // Check and auto-complete any overdue visits
+        $this->checkAndAutoCompleteVisits();
+        
         $vendors = Vendor::with('user')->orderBy('created_at', 'desc')->paginate(15);
         return view('admin.vendors', compact('vendors'));
+    }
+
+    /**
+     * Manually trigger visit completion check (for testing/debugging)
+     */
+    public function checkVisits()
+    {
+        $completedCount = $this->checkAndAutoCompleteVisits();
+        
+        return response()->json([
+            'success' => true,
+            'message' => "Auto-completed {$completedCount} overdue facility visits.",
+            'completed_count' => $completedCount
+        ]);
+    }
+
+    /**
+     * Manually complete a specific facility visit (for testing)
+     */
+    public function completeVisit($vendorId)
+    {
+        try {
+            $vendor = Vendor::findOrFail($vendorId);
+            $latestVisit = $vendor->facilityVisits()->latest()->first();
+            
+            if (!$latestVisit) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'No facility visit found for this vendor.'
+                ], 400);
+            }
+            
+            if ($latestVisit->status === 'completed') {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'Visit is already completed.'
+                ], 400);
+            }
+            
+            $latestVisit->update([
+                'status' => 'completed',
+                'outcome' => 'pending_review'
+            ]);
+            
+            $vendor->update([
+                'status' => 'visit_completed',
+                'processing_status' => 'visit_completed'
+            ]);
+            
+            \Log::info('Manually completed facility visit', [
+                'vendor_id' => $vendorId,
+                'visit_id' => $latestVisit->id
+            ]);
+            
+            return response()->json([
+                'success' => true,
+                'message' => 'Facility visit completed successfully. Vendor can now be approved.'
+            ]);
+        } catch (\Exception $e) {
+            \Log::error('Error completing visit: ' . $e->getMessage());
+            return response()->json([
+                'success' => false,
+                'message' => 'Error completing visit: ' . $e->getMessage()
+            ], 500);
+        }
     }
 
     public function analytics()
@@ -181,8 +379,8 @@ class AdminController extends Controller
         // User growth percentage (current month vs previous month)
         $currentMonth = now()->format('Y-m');
         $previousMonth = now()->subMonth()->format('Y-m');
-        $currentMonthUsers = User::whereRaw('DATE_FORMAT(created_at, "%Y-%m") = ?', [$currentMonth])->count();
-        $previousMonthUsers = User::whereRaw('DATE_FORMAT(created_at, "%Y-%m") = ?', [$previousMonth])->count();
+        $currentMonthUsers = User::whereRaw("strftime('%Y-%m', created_at) = ?", [$currentMonth])->count();
+        $previousMonthUsers = User::whereRaw("strftime('%Y-%m', created_at) = ?", [$previousMonth])->count();
         if ($previousMonthUsers > 0) {
             $userGrowthPercent = round((($currentMonthUsers - $previousMonthUsers) / $previousMonthUsers) * 100);
         } else {
@@ -212,7 +410,7 @@ class AdminController extends Controller
 
         // Monthly trends (last 6 months)
         $monthlyUsers = User::select(
-            DB::raw('DATE_FORMAT(created_at, "%Y-%m") as month'),
+            DB::raw("strftime('%Y-%m', created_at) as month"),
             DB::raw('count(*) as count')
         )
             ->where('created_at', '>=', now()->subMonths(6))
@@ -221,7 +419,7 @@ class AdminController extends Controller
             ->get();
 
         $monthlyVendors = Vendor::select(
-            DB::raw('DATE_FORMAT(created_at, "%Y-%m") as month'),
+            DB::raw("strftime('%Y-%m', created_at) as month"),
             DB::raw('count(*) as count')
         )
             ->where('created_at', '>=', now()->subMonths(6))
@@ -230,7 +428,7 @@ class AdminController extends Controller
             ->get();
 
         $monthlyOrders = Order::select(
-            DB::raw('DATE_FORMAT(created_at, "%Y-%m") as month'),
+            DB::raw("strftime('%Y-%m', created_at) as month"),
             DB::raw('count(*) as count')
         )
             ->where('created_at', '>=', now()->subMonths(6))
@@ -446,5 +644,15 @@ class AdminController extends Controller
             }
         }
         return response()->json(['labels' => $labels, 'data' => $data]);
+    }
+
+    public function showForecast()
+    {
+        $path = storage_path('app/public/forecast_results.json');
+        $forecast = [];
+        if (file_exists($path)) {
+            $forecast = json_decode(file_get_contents($path), true);
+        }
+        return view('dashboards.admin', compact('forecast'));
     }
 }

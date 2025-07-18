@@ -4,9 +4,11 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>SWSS Admin Dashboard</title>
+    @vite(['resources/css/app.css', 'resources/js/app.js'])
     <script src="https://cdn.tailwindcss.com"></script>
     <link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@300;400;500;600;700&family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
     <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
+    <script defer src="https://unpkg.com/alpinejs@3.x.x/dist/cdn.min.js"></script>
     <meta name="csrf-token" content="{{ csrf_token() }}">
     <style>
         :root {
@@ -283,10 +285,7 @@
         </div>
         
         <div class="flex items-center space-x-6">
-            <div class="relative">
-                <i class="fas fa-bell text-gray-300 text-xl cursor-pointer hover:text-white transition-colors"></i>
-                <span class="notification-dot absolute -top-1 -right-1 w-3 h-3 rounded-full"></span>
-            </div>
+            <x-admin-notification-dropdown />
             <div class="flex items-center space-x-3">
                 <div class="text-right">
                     <p class="text-sm font-semibold">{{ Auth::user()->username }}</p>
@@ -487,7 +486,7 @@
                     <div class="flex justify-between items-center mb-6">
                         <h2 class="text-2xl font-bold font-space">Vendor Applications</h2>
                         <div class="flex space-x-2">
-                            <select class="bg-transparent border border-gray-600 rounded-lg px-3 py-1 text-sm" id="statusFilter">
+                            <select class="bg-gray-800 border border-gray-600 rounded-lg px-3 py-1 text-sm text-white focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500" id="statusFilter">
                                 <option value="">All Status</option>
                                 <option value="pending">Pending</option>
                                 <option value="pending_visit">Pending Visit</option>
@@ -556,8 +555,7 @@
                                         </td>
                                         <td class="py-4 px-4">
                                             <div class="flex space-x-2">
-                                                <button class="btn-primary px-3 py-1 rounded text-xs" 
-                                                        onclick="viewVendorDetails({{ $vendor->id }})">
+                                                <button class="btn-primary px-3 py-1 rounded text-xs" onclick="viewVendorDetails({{ $vendor->id }})">
                                                     <i class="fas fa-eye mr-1"></i>
                                                     View
                                                 </button>
@@ -658,6 +656,60 @@
             </form>
         </div>
     </div>
+
+    <!-- Vendor Details Modal -->
+    <div id="vendorModal" class="fixed inset-0 bg-black bg-opacity-50 hidden z-50">
+        <div class="flex items-center justify-center min-h-screen p-4">
+            <div class="glass-card rounded-2xl max-w-4xl w-full max-h-[90vh] overflow-y-auto">
+                <div class="p-6 border-b border-gray-700">
+                    <div class="flex items-center justify-between">
+                        <h3 class="text-xl font-semibold text-white">Vendor Details</h3>
+                        <button onclick="closeVendorModal()" class="text-white hover:text-white">
+                            <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path>
+                            </svg>
+                        </button>
+                    </div>
+                </div>
+                <div id="vendorModalContent" class="p-6">
+                    <!-- Content will be loaded dynamically -->
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Image Modal for business images -->
+    <div id="imageModal" class="fixed inset-0 bg-black bg-opacity-90 hidden z-50">
+        <div class="flex items-center justify-center min-h-screen p-4">
+            <div class="relative max-w-2xl w-full">
+                <div class="flex items-center justify-between mb-4">
+                    <h3 id="imageModalTitle" class="text-xl font-semibold text-white"></h3>
+                    <button onclick="closeImageModal()" class="text-white hover:text-white">
+                        <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path>
+                        </svg>
+                    </button>
+                </div>
+                <img id="imageModalImg" src="" alt="" class="w-full h-auto max-h-[80vh] object-contain rounded-lg">
+            </div>
+        </div>
+    </div>
+
+    @if(!empty($forecast))
+        <h3>Wheat Demand Forecast (Next 6 Months)</h3>
+        <table>
+            <tr>
+                <th>Month</th>
+                <th>Forecasted Demand</th>
+            </tr>
+            @foreach($forecast['dates'] as $i => $month)
+                <tr>
+                    <td>{{ $month }}</td>
+                    <td>{{ number_format($forecast['values'][$i], 2) }}</td>
+                </tr>
+            @endforeach
+        </table>
+    @endif
 
     <script>
         const sidebarToggle = document.getElementById('sidebarToggle');
@@ -819,17 +871,147 @@
             });
         });
 
-        setInterval(() => {
-            const randomCard = document.querySelectorAll('.stat-card h3')[Math.floor(Math.random() * 3)];
-            const currentValue = parseInt(randomCard.textContent.replace(/,/g, ''));
-            const newValue = currentValue + Math.floor(Math.random() * 10) - 5;
-            randomCard.textContent = newValue.toLocaleString();
-        }, 10000);
-
         // Vendor Management Functions
         function viewVendorDetails(vendorId) {
-            // TODO: Implement modal or redirect to vendor details page
-            alert('View vendor details for ID: ' + vendorId);
+            document.getElementById('vendorModal').classList.remove('hidden');
+            document.getElementById('vendorModalContent').innerHTML = '<div class="flex items-center justify-center py-8"><div class="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-500"></div></div>';
+            fetch(`/admin/vendors/${vendorId}/details`)
+                .then(response => {
+                    if (!response.ok) throw new Error(`HTTP error! status: ${response.status}`);
+                    return response.json();
+                })
+                .then(data => {
+                    if (data.success) {
+                        displayVendorDetails(data.vendor);
+                    } else {
+                        document.getElementById('vendorModalContent').innerHTML = '<div class="text-red-400 text-center py-8">Error loading vendor details</div>';
+                    }
+                })
+                .catch(error => {
+                    document.getElementById('vendorModalContent').innerHTML = `<div class="text-red-400 text-center py-8">Error loading vendor details: ${error.message}</div>`;
+                });
+        }
+        function displayVendorDetails(vendor) {
+            let businessImagesHtml = '';
+            if (vendor.business_images && Object.keys(vendor.business_images).length > 0) {
+                businessImagesHtml = `
+                    <div class="mb-6">
+                        <h4 class="text-lg font-semibold text-white mb-4">Business Images</h4>
+                        <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                            ${Object.entries(vendor.business_images).map(([type, url]) => `
+                                <div class="bg-gray-800 rounded-lg p-3">
+                                    <div class="text-sm text-gray-400 mb-2 capitalize">${type.replace('_', ' ')}</div>
+                                    <img src="${url}" alt="${type}" class="w-full h-32 object-cover rounded-lg border border-gray-600 hover:scale-105 transition-transform cursor-pointer" onclick="openImageModal('${url}', '${type}')">
+                                </div>
+                            `).join('')}
+                        </div>
+                    </div>
+                `;
+            }
+            let facilityVisitsHtml = '';
+            if (vendor.facility_visits && vendor.facility_visits.length > 0) {
+                facilityVisitsHtml = `
+                    <div class="mb-6">
+                        <h4 class="text-lg font-semibold text-white mb-4">Facility Visits</h4>
+                        <div class="space-y-3">
+                            ${vendor.facility_visits.map(visit => `
+                                <div class="bg-gray-800 rounded-lg p-4">
+                                    <div class="flex justify-between items-start mb-2">
+                                        <div class="text-sm text-gray-400">${new Date(visit.scheduled_at).toLocaleDateString()}</div>
+                                        <span class="px-2 py-1 rounded-full text-xs ${visit.status === 'completed' ? 'bg-green-500/20 text-green-300' : visit.status === 'scheduled' ? 'bg-blue-500/20 text-blue-300' : 'bg-yellow-500/20 text-yellow-300'}">
+                                            ${visit.status.charAt(0).toUpperCase() + visit.status.slice(1)}
+                                        </span>
+                                    </div>
+                                    ${visit.notes ? `<p class="text-sm text-gray-300">${visit.notes}</p>` : ''}
+                                    ${visit.outcome ? `<p class="text-sm text-gray-400 mt-1">Outcome: ${visit.outcome}</p>` : ''}
+                                </div>
+                            `).join('')}
+                        </div>
+                    </div>
+                `;
+            }
+            let scoresHtml = '';
+            if (vendor.scores && vendor.scores.total) {
+                scoresHtml = `
+                    <div class="mb-6">
+                        <h4 class="text-lg font-semibold text-white mb-4">Assessment Scores</h4>
+                        <div class="grid grid-cols-2 md:grid-cols-4 gap-4">
+                            <div class="bg-gray-800 rounded-lg p-3 text-center">
+                                <div class="text-2xl font-bold text-blue-400">${vendor.scores.financial || 0}</div>
+                                <div class="text-sm text-gray-400">Financial</div>
+                            </div>
+                            <div class="bg-gray-800 rounded-lg p-3 text-center">
+                                <div class="text-2xl font-bold text-green-400">${vendor.scores.reputation || 0}</div>
+                                <div class="text-sm text-gray-400">Reputation</div>
+                            </div>
+                            <div class="bg-gray-800 rounded-lg p-3 text-center">
+                                <div class="text-2xl font-bold text-purple-400">${vendor.scores.compliance || 0}</div>
+                                <div class="text-sm text-gray-400">Compliance</div>
+                            </div>
+                            <div class="bg-gray-800 rounded-lg p-3 text-center">
+                                <div class="text-2xl font-bold text-yellow-400">${vendor.scores.total || 0}</div>
+                                <div class="text-sm text-gray-400">Total</div>
+                            </div>
+                        </div>
+                    </div>
+                `;
+            }
+            // Only display fields that are not N/A or empty
+            let businessInfoHtml = '';
+            if (vendor.application_data?.business_name && vendor.application_data.business_name !== 'N/A') {
+                businessInfoHtml += `<div><label class=\"text-sm text-gray-400\">Business Name</label><p class=\"text-white font-medium\">${vendor.application_data.business_name}</p></div>`;
+            }
+            // Email is always shown if present
+            let contactInfoHtml = '';
+            if (vendor.user?.email && vendor.user.email !== 'N/A') {
+                contactInfoHtml += `<div><label class=\"text-sm text-gray-400\">Email</label><p class=\"text-white\">${vendor.user.email}</p></div>`;
+            }
+            const content = `
+                ${businessImagesHtml}
+                <div class="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-6">
+                    <div>
+                        <h4 class="text-lg font-semibold text-white mb-4">Business Information</h4>
+                        <div class="space-y-3">
+                            ${businessInfoHtml || '<p class=\"text-gray-400\">No business information available.</p>'}
+                        </div>
+                    </div>
+                    <div>
+                        <h4 class="text-lg font-semibold text-white mb-4">Contact Information</h4>
+                        <div class="space-y-3">
+                            ${contactInfoHtml || '<p class=\"text-gray-400\">No contact information available.</p>'}
+                        </div>
+                    </div>
+                </div>
+                ${scoresHtml}
+                ${facilityVisitsHtml}
+                <div class="mb-6">
+                    <h4 class="text-lg font-semibold text-white mb-4">Additional Information</h4>
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                        <div><label class="text-sm text-gray-400">Processing Status</label><p class="text-white">${vendor.processing_status || 'N/A'}</p></div>
+                        <div><label class="text-sm text-gray-400">Application Date</label><p class="text-white">${new Date(vendor.created_at).toLocaleDateString()}</p></div>
+                    </div>
+                </div>
+                <div class="mt-6">
+                    <h4 class="text-lg font-semibold text-white mb-4">Scores</h4>
+                    <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+                        <div class="glass-card p-4 rounded-xl border border-gray-700/50"><div class="text-center"><p class="text-sm text-white">Financial Score</p><p class="text-2xl font-bold text-white">${vendor.score_financial || 0}%</p></div></div>
+                        <div class="glass-card p-4 rounded-xl border border-gray-700/50"><div class="text-center"><p class="text-sm text-white">Reputation Score</p><p class="text-2xl font-bold text-white">${vendor.score_reputation || 0}%</p></div></div>
+                        <div class="glass-card p-4 rounded-xl border border-gray-700/50"><div class="text-center"><p class="text-sm text-white">Compliance Score</p><p class="text-2xl font-bold text-white">${vendor.score_compliance || 0}%</p></div></div>
+                    </div>
+                </div>
+            `;
+            document.getElementById('vendorModalContent').innerHTML = content;
+        }
+        function closeVendorModal() {
+            document.getElementById('vendorModal').classList.add('hidden');
+        }
+        function openImageModal(imageUrl, imageType) {
+            document.getElementById('imageModalImg').src = imageUrl;
+            document.getElementById('imageModalTitle').textContent = imageType.replace('_', ' ').toUpperCase();
+            document.getElementById('imageModal').classList.remove('hidden');
+        }
+        function closeImageModal() {
+            document.getElementById('imageModal').classList.add('hidden');
         }
 
         // Modal logic
@@ -844,7 +1026,7 @@
             document.getElementById('scheduleVisitForm').reset();
         }
 
-        // AJAX form submission
+        // Redirect to schedule visit page
         const scheduleVisitForm = document.getElementById('scheduleVisitForm');
         scheduleVisitForm.addEventListener('submit', function(e) {
             e.preventDefault();
@@ -852,27 +1034,55 @@
             const scheduledAt = document.getElementById('scheduled_at').value;
             const notes = document.getElementById('notes').value;
             
+            if (!scheduledAt) {
+                alert('Please select a date and time for the visit.');
+                return;
+            }
+            
+            // Show loading state
+            const submitBtn = this.querySelector('button[type="submit"]');
+            const originalText = submitBtn.textContent;
+            submitBtn.textContent = 'Scheduling...';
+            submitBtn.disabled = true;
+            
+            // Get CSRF token
+            const csrfToken = document.querySelector('meta[name="csrf-token"]').getAttribute('content');
+            
             fetch(`/admin/vendors/${vendorId}/schedule-visit`, {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json',
-                    'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').getAttribute('content'),
+                    'X-CSRF-TOKEN': csrfToken,
                     'Accept': 'application/json',
+                    'X-Requested-With': 'XMLHttpRequest'
                 },
-                body: JSON.stringify({ scheduled_at: scheduledAt, notes: notes })
+                body: JSON.stringify({
+                    scheduled_at: scheduledAt,
+                    notes: notes
+                })
             })
-            .then(response => response.json())
+            .then(response => {
+                if (!response.ok) {
+                    throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+                }
+                return response.json();
+            })
             .then(data => {
                 if (data.success) {
                     closeScheduleVisitModal();
                     alert('Facility visit scheduled successfully!');
-                    window.location.reload(); // Optionally refresh the table
+                    window.location.reload();
                 } else {
                     alert('Error: ' + (data.message || 'Could not schedule visit.'));
                 }
             })
             .catch(error => {
-                alert('Error: ' + error.message);
+                console.error('Error scheduling visit:', error);
+                alert('Error scheduling visit: ' + error.message);
+            })
+            .finally(() => {
+                submitBtn.textContent = originalText;
+                submitBtn.disabled = false;
             });
         });
 

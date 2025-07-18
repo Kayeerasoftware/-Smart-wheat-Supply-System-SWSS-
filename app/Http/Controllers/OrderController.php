@@ -40,8 +40,17 @@ class OrderController extends Controller
             return redirect()->back()->with('error', 'Vendor profile not found.');
         }
         
-        $products = Product::where('supplier_id', $user->id)->get();
-        $customers = User::where('role', 'retailer')->get();
+        // Fetch all wheat products regardless of supplier
+        $products = Product::where('name', 'like', '%wheat%')->get();
+        
+        // Get farmers who have wheat available in their inventory
+        $customers = User::where('role', 'farmer')
+            ->whereHas('farmerInventory', function($query) {
+                $query->where('is_available', true)
+                      ->where('quantity', '>', 0);
+            })
+            ->with(['farmerInventory.product'])
+            ->get();
         
         return view('orders.create', compact('products', 'customers'));
     }
@@ -50,10 +59,10 @@ class OrderController extends Controller
     {
         $request->validate([
             'customer_id' => 'required|exists:users,id',
-            'order_type' => 'required|in:purchase,sale,return',
+            'order_type' => 'required|in:purchase,return',
             'expected_delivery_date' => 'required|date|after:today',
-            'shipping_address' => 'required|string|max:500',
-            'billing_address' => 'required|string|max:500',
+            'shipping_address' => 'required|string|min:10|max:500',
+            'billing_address' => 'required|string|min:10|max:500',
             'payment_method' => 'required|in:cash,credit_card,bank_transfer,check',
             'notes' => 'nullable|string|max:1000',
             'items' => 'required|array|min:1',
@@ -122,6 +131,7 @@ class OrderController extends Controller
 
         } catch (\Exception $e) {
             DB::rollback();
+            dd($e->getMessage());
             return back()->withInput()
                 ->with('error', 'Failed to create order. Please try again.');
         }
@@ -130,6 +140,28 @@ class OrderController extends Controller
     public function show(Order $order)
     {
         $order->load(['orderItems.product', 'customer', 'vendor']);
+        if (request()->ajax() || request()->has('ajax') || request()->wantsJson()) {
+            return response()->json([
+                'id' => $order->id,
+                'order_number' => $order->order_number,
+                'customer_name' => $order->customer ? $order->customer->username : null,
+                'status' => $order->status,
+                'total_amount' => $order->total_amount,
+                'notes' => $order->notes,
+                'created_at' => $order->created_at ? $order->created_at->toDateTimeString() : null,
+                'shipping_address' => $order->shipping_address,
+                'billing_address' => $order->billing_address,
+                'payment_method' => $order->payment_method,
+                'items' => $order->orderItems->map(function($item) {
+                    return [
+                        'id' => $item->id,
+                        'product_name' => $item->product ? $item->product->name : null,
+                        'quantity' => $item->quantity,
+                        'unit_price' => $item->unit_price,
+                    ];
+                }),
+            ]);
+        }
         return view('orders.show', compact('order'));
     }
 
@@ -151,9 +183,26 @@ class OrderController extends Controller
 
     public function update(Request $request, Order $order)
     {
+        if ($request->expectsJson() || $request->isJson()) {
+            $data = $request->all();
+            $validator = \Validator::make($data, [
+                'status' => 'required|in:pending,processing,shipped,delivered,cancelled',
+                'notes' => 'nullable|string|max:1000',
+                'total_amount' => 'required|numeric|min:0',
+            ]);
+            if ($validator->fails()) {
+                return response()->json(['errors' => $validator->errors()], 422);
+            }
+            $order->update([
+                'status' => $data['status'],
+                'notes' => $data['notes'] ?? $order->notes,
+                'total_amount' => $data['total_amount'],
+            ]);
+            return response()->json(['success' => true, 'order' => $order]);
+        }
         $request->validate([
             'customer_id' => 'required|exists:users,id',
-            'order_type' => 'required|in:purchase,sale,return',
+            'order_type' => 'required|in:purchase,return',
             'status' => 'required|in:pending,processing,shipped,delivered,cancelled',
             'expected_delivery_date' => 'required|date',
             'shipping_address' => 'required|string|max:500',
@@ -179,5 +228,48 @@ class OrderController extends Controller
         }
 
         return back()->with('error', 'Cannot delete order that is not pending.');
+    }
+
+    public function quickCreate($farmerId, $productId)
+    {
+        $user = Auth::user();
+        $vendor = Vendor::where('user_id', $user->id)->first();
+        
+        if (!$vendor) {
+            return redirect()->back()->with('error', 'Vendor profile not found.');
+        }
+        
+        // Get the specific farmer and product
+        $farmer = User::where('id', $farmerId)->where('role', 'farmer')->first();
+        $product = Product::where('id', $productId)->first();
+        
+        if (!$farmer || !$product) {
+            return redirect()->back()->with('error', 'Farmer or product not found.');
+        }
+        
+        // Get the farmer's inventory for this product
+        $farmerInventory = $farmer->farmerInventory()
+            ->where('product_id', $productId)
+            ->where('is_available', true)
+            ->where('quantity', '>', 0)
+            ->first();
+        
+        if (!$farmerInventory) {
+            return redirect()->back()->with('error', 'Product is not available from this farmer.');
+        }
+        
+        // Fetch all wheat products regardless of supplier
+        $products = Product::where('name', 'like', '%wheat%')->get();
+        
+        // Get all farmers who have wheat available in their inventory
+        $customers = User::where('role', 'farmer')
+            ->whereHas('farmerInventory', function($query) {
+                $query->where('is_available', true)
+                      ->where('quantity', '>', 0);
+            })
+            ->with(['farmerInventory.product'])
+            ->get();
+        
+        return view('orders.create', compact('products', 'customers', 'farmer', 'product', 'farmerInventory'));
     }
 } 

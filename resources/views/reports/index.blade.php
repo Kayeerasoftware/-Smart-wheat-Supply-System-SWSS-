@@ -295,7 +295,7 @@
         }
     </style>
 </head>
-<body class="text-white overflow-x-hidden">
+<body class="text-white overflow-x-hidden" x-data="{ activeTab: 'overview' }">
     <!-- Top Navigation -->
     <nav class="fixed-nav px-6 py-4 flex justify-between items-center">
         <div class="flex items-center space-x-4">
@@ -350,6 +350,14 @@
             <a href="/reports" class="sidebar-item active flex items-center space-x-3 px-4 py-3 rounded-lg text-white">
                 <i class="fas fa-chart-bar w-5"></i>
                 <span class="font-medium">Reports</span>
+            </a>
+            <a href="{{ route('supplier.analytics') }}" class="sidebar-item flex items-center space-x-3 px-4 py-3 rounded-lg text-gray-300">
+                <i class="fas fa-chart-line w-5"></i>
+                <span class="font-medium">Analytics</span>
+            </a>
+            <a href="{{ route('supplier.performance') }}" class="sidebar-item flex items-center space-x-3 px-4 py-3 rounded-lg text-gray-300">
+                <i class="fas fa-trophy w-5"></i>
+                <span class="font-medium">Performance</span>
             </a>
             <a href="/contracts" class="sidebar-item flex items-center space-x-3 px-4 py-3 rounded-lg text-gray-300">
                 <i class="fas fa-handshake w-5"></i>
@@ -783,6 +791,18 @@
                         @endforelse
                     </tbody>
                 </table>
+            </div>
+        </div>
+        <div x-show="activeTab === 'analytics'" class="tab-content">
+            <div class="glass-card p-6 mb-6">
+                <h3 class="text-xl font-semibold text-white mb-4">Analytics Dashboard</h3>
+                <p class="text-gray-300">Analytics tab is working! You should see this content.</p>
+            </div>
+        </div>
+        <div x-show="activeTab === 'performance'" class="tab-content">
+            <div class="glass-card p-6 mb-6">
+                <h3 class="text-xl font-semibold text-white mb-4">Performance Dashboard</h3>
+                <p class="text-gray-300">Performance tab is working! You should see this content.</p>
             </div>
         </div>
     </main>

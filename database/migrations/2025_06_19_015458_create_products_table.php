@@ -30,6 +30,7 @@ return new class extends Migration
             $table->enum('status', ['active', 'inactive', 'discontinued'])->default('active');
             $table->boolean('is_raw_material')->default(false); // Is this a raw material?
             $table->boolean('is_finished_good')->default(true); // Is this a finished product?
+            $table->string('type')->nullable(); // 'raw' or 'processed'
             $table->timestamps();
 
             $table->foreign('category_id')->references('id')->on('categories')->onDelete('cascade');

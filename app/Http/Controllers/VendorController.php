@@ -39,6 +39,13 @@ class VendorController extends Controller
                 'business_name' => 'required|string|max:255',
                 'business_type' => 'required|string|max:255',
                 'business_description' => 'required|string',
+                'registration_number' => 'nullable|string|max:255',
+                'founded_year' => 'nullable|integer|min:1900|max:' . date('Y'),
+                'annual_revenue' => 'nullable|string|max:255',
+                'address' => 'nullable|string|max:255',
+                'city' => 'nullable|string|max:255',
+                'country' => 'nullable|string|max:255',
+                'phone' => 'nullable|string|max:50',
                 'tax_id' => 'nullable|file|mimes:pdf|max:2048',
                 'financial_records' => 'nullable|file|mimes:pdf|max:2048',
                 'certifications' => 'nullable|file|mimes:pdf|max:2048',
@@ -51,6 +58,13 @@ class VendorController extends Controller
                 'business_name' => $data['business_name'],
                 'business_type' => $data['business_type'],
                 'business_description' => $data['business_description'],
+                'registration_number' => $data['registration_number'] ?? '',
+                'founded_year' => $data['founded_year'] ?? '',
+                'annual_revenue' => $data['annual_revenue'] ?? '',
+                'address' => $data['address'] ?? '',
+                'city' => $data['city'] ?? '',
+                'country' => $data['country'] ?? '',
+                'phone' => $data['phone'] ?? '',
             ];
             $vendor->pdf_paths = $pdf_paths;
             $vendor->status = 'pending';

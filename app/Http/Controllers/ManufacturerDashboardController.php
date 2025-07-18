@@ -20,7 +20,23 @@ class ManufacturerDashboardController extends Controller
 
     public function index()
     {
-        $user = Auth::user();
+        $user = auth()->user();
+        $role = $user->role;
+        $userId = $user->id;
+        
+        // Load demand forecast if available
+        $forecast = [];
+        $forecastPath = storage_path("app/public/forecasts/forecast_{$role}_{$userId}.json");
+        if (file_exists($forecastPath)) {
+            $forecast = json_decode(file_get_contents($forecastPath), true);
+        }
+        
+        // Load customer segments if available
+        $customerSegments = [];
+        $segmentsPath = storage_path('app/public/segments/customer_segments.json');
+        if (file_exists($segmentsPath)) {
+            $customerSegments = json_decode(file_get_contents($segmentsPath), true);
+        }
         
         // Get recent activity for the user
         $recentActivity = Activity::where('user_id', $user->user_id)
@@ -68,6 +84,12 @@ class ManufacturerDashboardController extends Controller
             ];
         }
 
+        // Get customer insights for manufacturing decisions
+        $customerInsights = $this->getCustomerInsights($customerSegments);
+        
+        // Get production recommendations based on customer segments
+        $productionRecommendations = $this->getProductionRecommendations($customerSegments);
+
         $data = [
             'recentActivity' => $recentActivity,
             'activeLines' => $activeLines,
@@ -80,6 +102,10 @@ class ManufacturerDashboardController extends Controller
             'recentQualityChecks' => $recentQualityChecks,
             'suppliers' => $suppliers,
             'qualityTrends' => $qualityTrends,
+            'forecast' => $forecast,
+            'customerSegments' => $customerSegments,
+            'customerInsights' => $customerInsights,
+            'productionRecommendations' => $productionRecommendations,
         ];
 
         return view('dashboards.manufacturer', $data);
@@ -110,6 +136,125 @@ class ManufacturerDashboardController extends Controller
             ->get();
             
         return view('manufacturer.raw-materials.index', compact('materials'));
+    }
+
+    private function getCustomerInsights($customerSegments)
+    {
+        $insights = [
+            'totalCustomers' => 0,
+            'segmentBreakdown' => [],
+            'demandPatterns' => [],
+        ];
+
+        if (!empty($customerSegments)) {
+            $customers = $customerSegments['customers'] ?? [];
+            $insights['totalCustomers'] = count($customers);
+            $insights['segmentBreakdown'] = $this->getSegmentBreakdown($customers);
+            $insights['demandPatterns'] = $this->getDemandPatterns($customers);
+        }
+
+        return $insights;
+    }
+
+    private function getSegmentBreakdown($customers)
+    {
+        $breakdown = [];
+        foreach ($customers as $customer) {
+            $segment = $customer['segment_name'] ?? 'Unknown';
+            $breakdown[$segment] = ($breakdown[$segment] ?? 0) + 1;
+        }
+        return $breakdown;
+    }
+
+    private function getDemandPatterns($customers)
+    {
+        $patterns = [
+            'highValueCustomers' => 0,
+            'frequentBuyers' => 0,
+            'seasonalDemand' => [],
+        ];
+
+        foreach ($customers as $customer) {
+            $segment = $customer['segment_name'] ?? '';
+            $monetary = $customer['monetary'] ?? 0;
+            $frequency = $customer['frequency'] ?? 0;
+
+            if ($monetary > 1000) {
+                $patterns['highValueCustomers']++;
+            }
+            if ($frequency > 10) {
+                $patterns['frequentBuyers']++;
+            }
+        }
+
+        return $patterns;
+    }
+
+    private function getProductionRecommendations($customerSegments)
+    {
+        $recommendations = [];
+
+        if (!empty($customerSegments)) {
+            $customers = $customerSegments['customers'] ?? [];
+            $segmentCounts = [];
+            
+            foreach ($customers as $customer) {
+                $segment = $customer['segment_name'] ?? 'Unknown';
+                $segmentCounts[$segment] = ($segmentCounts[$segment] ?? 0) + 1;
+            }
+
+            // Production recommendations based on customer segments
+            if (isset($segmentCounts['Champions'])) {
+                $recommendations[] = "Increase production capacity for premium products (Champions segment)";
+            }
+            if (isset($segmentCounts['Frequent Customers'])) {
+                $recommendations[] = "Optimize production lines for high-volume products";
+            }
+            if (isset($segmentCounts['Big Spenders'])) {
+                $recommendations[] = "Focus on quality control for high-value customers";
+            }
+            if (isset($segmentCounts['Recent Customers'])) {
+                $recommendations[] = "Maintain diverse product range for new customers";
+            }
+        }
+
+        return $recommendations;
+    }
+
+    public function customerSegments()
+    {
+        $user = auth()->user();
+        
+        // Load customer segments
+        $segments = [];
+        $segmentsPath = storage_path('app/public/segments/customer_segments.json');
+        if (file_exists($segmentsPath)) {
+            $segments = json_decode(file_get_contents($segmentsPath), true);
+        }
+
+        return view('manufacturer.customer-segments', compact('segments'));
+    }
+
+    public function runSegmentation()
+    {
+        $scriptPath = base_path('ml_scripts/customer_segmentation.py');
+        $output = shell_exec("python \"$scriptPath\" 2>&1");
+        
+        return redirect()->back()->with('success', 'Customer segmentation completed! ' . $output);
+    }
+
+    public function productionInsights()
+    {
+        $user = auth()->user();
+        
+        // Load customer segments and production data
+        $segments = [];
+        $segmentsPath = storage_path('app/public/segments/customer_segments.json');
+        if (file_exists($segmentsPath)) {
+            $segments = json_decode(file_get_contents($segmentsPath), true);
+        }
+
+        return view('manufacturer.production-insights', compact('segments'));
     }
 
     // Production Line Management

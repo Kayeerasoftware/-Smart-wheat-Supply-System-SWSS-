@@ -34,20 +34,21 @@ class ProductSeeder extends Seeder
 
         $products = [
             [
-                'name' => 'Premium Wheat Flour',
-                'category_name' => 'Flour Products',
-                'brand' => 'Golden Harvest',
-                'description' => 'High-quality all-purpose wheat flour for baking',
+                'name' => 'Wheat',
+                'category_name' => 'Raw Wheat',
+                'brand' => 'Farm Fresh',
+                'description' => 'High-quality wheat harvested from local farms',
                 'unit_of_measure' => 'kg',
-                'unit_price' => 2.50,
-                'cost_price' => 1.80,
+                'unit_price' => 2.00,
+                'cost_price' => 1.50,
                 'reorder_point' => 100,
                 'reorder_quantity' => 500,
-                'is_raw_material' => false,
-                'is_finished_good' => true,
+                'is_raw_material' => true,
+                'is_finished_good' => false,
+                'type' => 'raw',
             ],
             [
-                'name' => 'Organic Whole Wheat',
+                'name' => 'Organic Wheat',
                 'category_name' => 'Organic Wheat',
                 'brand' => 'Nature\'s Best',
                 'description' => 'Certified organic whole wheat grains',
@@ -58,19 +59,7 @@ class ProductSeeder extends Seeder
                 'reorder_quantity' => 200,
                 'is_raw_material' => true,
                 'is_finished_good' => false,
-            ],
-            [
-                'name' => 'Bread Flour',
-                'category_name' => 'Flour Products',
-                'brand' => 'Baker\'s Choice',
-                'description' => 'Specialized flour for bread making',
-                'unit_of_measure' => 'kg',
-                'unit_price' => 3.00,
-                'cost_price' => 2.10,
-                'reorder_point' => 75,
-                'reorder_quantity' => 300,
-                'is_raw_material' => false,
-                'is_finished_good' => true,
+                'type' => 'raw',
             ],
             [
                 'name' => 'Wheat Packaging Bags',
@@ -84,6 +73,21 @@ class ProductSeeder extends Seeder
                 'reorder_quantity' => 1000,
                 'is_raw_material' => true,
                 'is_finished_good' => false,
+                'type' => 'raw',
+            ],
+            [
+                'name' => 'Bread Flour',
+                'category_name' => 'Flour Products',
+                'brand' => 'Baker\'s Choice',
+                'description' => 'Specialized flour for bread making',
+                'unit_of_measure' => 'kg',
+                'unit_price' => 3.00,
+                'cost_price' => 2.10,
+                'reorder_point' => 75,
+                'reorder_quantity' => 300,
+                'is_raw_material' => false,
+                'is_finished_good' => true,
+                'type' => 'processed',
             ],
             [
                 'name' => 'Fresh Baked Bread',
@@ -97,6 +101,7 @@ class ProductSeeder extends Seeder
                 'reorder_quantity' => 50,
                 'is_raw_material' => false,
                 'is_finished_good' => true,
+                'type' => 'processed',
             ],
         ];
 
@@ -121,6 +126,7 @@ class ProductSeeder extends Seeder
                     'is_raw_material' => $productData['is_raw_material'],
                     'is_finished_good' => $productData['is_finished_good'],
                     'status' => 'active',
+                    'type' => $productData['type'],
                     ]
                 );
             }

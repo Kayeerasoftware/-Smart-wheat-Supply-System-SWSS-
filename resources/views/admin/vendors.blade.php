@@ -4,7 +4,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>SWSS Admin Dashboard</title>
-    <script src="https://cdn.tailwindcss.com"></script>
+    @vite(['resources/css/app.css', 'resources/js/app.js'])
     <link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@300;400;500;600;700&family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
     <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
     <meta name="csrf-token" content="{{ csrf_token() }}">
@@ -276,10 +276,7 @@
         </div>
         
         <div class="flex items-center space-x-6">
-            <div class="relative">
-                <i class="fas fa-bell text-white text-xl cursor-pointer hover:text-white transition-colors"></i>
-                <span class="notification-dot absolute -top-1 -right-1 w-3 h-3 rounded-full"></span>
-            </div>
+            <x-admin-notification-dropdown />
             <div class="flex items-center space-x-3">
                 <div class="text-right">
                     <p class="text-sm font-semibold text-blue-300">{{ Auth::user()->username }}</p>
@@ -348,10 +345,26 @@
 
         <!-- Main Content -->
         <main class="flex-1 p-6 main-content">
+            <!-- Success/Error Messages -->
+            @if(session('success'))
+                <div class="mb-6 bg-green-500/20 border border-green-500/50 text-green-200 px-4 py-3 rounded-lg">
+                    {{ session('success') }}
+                </div>
+            @endif
+
+            @if(session('error'))
+                <div class="mb-6 bg-red-500/20 border border-red-500/50 text-red-200 px-4 py-3 rounded-lg">
+                    {{ session('error') }}
+                </div>
+            @endif
+
             <!-- Header Section -->
             <div class="mb-8">
                 <h1 class="text-4xl font-bold font-space gradient-text mb-2">Vendor Management</h1>
                 <p class="text-white text-lg">Manage supplier applications and vendor relationships</p>
+                <button onclick="checkVisits()" class="mt-2 px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors">
+                    <i class="fas fa-clock mr-2"></i>Check Overdue Visits
+                </button>
             </div>
 
             <!-- Statistics Cards -->
@@ -415,6 +428,8 @@
                         <select id="status-filter" class="px-4 py-2 bg-gray-800/50 border border-gray-600 rounded-lg text-white focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent">
                             <option value="">All Status</option>
                             <option value="pending">Pending</option>
+                            <option value="pending_visit">Visit Scheduled</option>
+                            <option value="visit_completed">Visit Completed</option>
                             <option value="approved">Approved</option>
                             <option value="rejected">Rejected</option>
                         </select>
@@ -448,21 +463,21 @@
                                 <td class="px-6 py-4">
                                     <div class="flex items-center">
                                         <div class="w-10 h-10 bg-gradient-to-br from-blue-500 to-purple-600 rounded-full flex items-center justify-center text-white font-semibold text-sm">
-                                            {{ strtoupper(substr($vendor->application_data['business_name'] ?? $vendor->user->name ?? 'N/A', 0, 2)) }}
+                                            {{ strtoupper(substr($vendor->application_data['business_name'] ?? $vendor->user->name ?? '', 0, 2)) }}
                                         </div>
                                         <div class="ml-4">
                                             <div class="text-sm font-medium text-white">
-                                                {{ $vendor->application_data['business_name'] ?? $vendor->user->name ?? 'N/A' }}
+                                                {{ $vendor->application_data['business_name'] ?? $vendor->user->name ?? '' }}
                                             </div>
                                             <div class="text-sm text-white">
-                                                {{ $vendor->application_data['business_type'] ?? 'N/A' }}
+                                                {{ $vendor->application_data['business_type'] ?? '' }}
                                             </div>
                                         </div>
                                     </div>
                                 </td>
                                 <td class="px-6 py-4">
-                                    <div class="text-sm text-white">{{ $vendor->user->email ?? 'N/A' }}</div>
-                                    <div class="text-sm text-white">{{ $vendor->application_data['phone'] ?? 'N/A' }}</div>
+                                    <div class="text-sm text-white">{{ $vendor->user->email ?? '' }}</div>
+                                    <div class="text-sm text-white">{{ $vendor->application_data['phone'] ?? '' }}</div>
                                 </td>
                                 <td class="px-6 py-4">
                                     @if($vendor->status === 'approved')
@@ -478,6 +493,20 @@
                                                 <path fill-rule="evenodd" d="M4.293 4.293a1 1 0 011.414 0L10 8.586l4.293-4.293a1 1 0 111.414 1.414L11.414 10l4.293 4.293a1 1 0 01-1.414 1.414L10 11.414l-4.293 4.293a1 1 0 01-1.414-1.414L8.586 10 4.293 5.707a1 1 0 010-1.414z" clip-rule="evenodd"></path>
                                             </svg>
                                             Rejected
+                                        </span>
+                                    @elseif($vendor->status === 'visit_completed')
+                                        <span class="inline-flex items-center px-3 py-1 rounded-full text-xs font-medium bg-blue-500/20 text-blue-300 border border-blue-500/30">
+                                            <svg class="w-3 h-3 mr-1" fill="currentColor" viewBox="0 0 20 20">
+                                                <path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clip-rule="evenodd"></path>
+                                            </svg>
+                                            Visit Completed
+                                        </span>
+                                    @elseif($vendor->status === 'pending_visit')
+                                        <span class="inline-flex items-center px-3 py-1 rounded-full text-xs font-medium bg-orange-500/20 text-orange-300 border border-orange-500/30">
+                                            <svg class="w-3 h-3 mr-1" fill="currentColor" viewBox="0 0 20 20">
+                                                <path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm1-12a1 1 0 10-2 0v4a1 1 0 00.293.707l2.828 2.829a1 1 0 101.415-1.415L11 9.586V6z" clip-rule="evenodd"></path>
+                                            </svg>
+                                            Visit Scheduled
                                         </span>
                                     @else
                                         <span class="inline-flex items-center px-3 py-1 rounded-full text-xs font-medium bg-yellow-500/20 text-yellow-300 border border-yellow-500/30">
@@ -513,7 +542,7 @@
                                             View
                                         </button>
                                         
-                                        @if($vendor->status === 'pending')
+                                        @if($vendor->status === 'pending' || $vendor->status === 'visit_completed')
                                         <button onclick="approveVendor({{ $vendor->id }})" class="bg-green-600 hover:bg-green-700 text-white px-3 py-1.5 rounded-lg text-xs flex items-center gap-1 transition-colors">
                                             <svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"></path>
@@ -525,6 +554,15 @@
                                                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path>
                                             </svg>
                                             Reject
+                                        </button>
+                                        @endif
+                                        
+                                        @if($vendor->status === 'pending_visit')
+                                        <button onclick="completeVisit({{ $vendor->id }})" class="bg-purple-600 hover:bg-purple-700 text-white px-3 py-1.5 rounded-lg text-xs flex items-center gap-1 transition-colors">
+                                            <svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+                                            </svg>
+                                            Complete Visit
                                         </button>
                                         @endif
                                         
@@ -560,7 +598,7 @@
     <!-- Vendor Details Modal -->
     <div id="vendorModal" class="fixed inset-0 bg-black bg-opacity-50 hidden z-50">
         <div class="flex items-center justify-center min-h-screen p-4">
-            <div class="glass-card rounded-2xl max-w-4xl w-full max-h-[90vh] overflow-y-auto">
+            <div class="glass-card rounded-2xl max-w-6xl w-full max-h-[90vh] overflow-y-auto">
                 <div class="p-6 border-b border-gray-700">
                     <div class="flex items-center justify-between">
                         <h3 class="text-xl font-semibold text-white">Vendor Details</h3>
@@ -578,290 +616,25 @@
         </div>
     </div>
 
-    <script>
-    // Sidebar toggle functionality
-    const sidebarToggle = document.getElementById('sidebarToggle');
-    const sidebar = document.getElementById('sidebar');
-
-    sidebarToggle.addEventListener('click', () => {
-        sidebar.classList.toggle('open');
-    });
-
-    // Close sidebar when clicking outside on mobile
-    document.addEventListener('click', (e) => {
-        if (window.innerWidth <= 768 && !sidebar.contains(e.target) && !sidebarToggle.contains(e.target)) {
-            sidebar.classList.remove('open');
-        }
-    });
-
-    function viewVendor(vendorId) {
-        // Show loading state
-        document.getElementById('vendorModal').classList.remove('hidden');
-        document.getElementById('vendorModalContent').innerHTML = '<div class="flex items-center justify-center py-8"><div class="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-500"></div></div>';
-        
-        // Fetch vendor details
-        fetch(`/admin/vendors/${vendorId}`)
-            .then(response => response.json())
-            .then(data => {
-                if (data.success) {
-                    displayVendorDetails(data.vendor);
-                } else {
-                    document.getElementById('vendorModalContent').innerHTML = '<div class="text-red-400 text-center py-8">Error loading vendor details</div>';
-                }
-            })
-            .catch(error => {
-                document.getElementById('vendorModalContent').innerHTML = '<div class="text-red-400 text-center py-8">Error loading vendor details</div>';
-            });
-    }
-
-    function displayVendorDetails(vendor) {
-        const content = `
-            <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
-                <div>
-                    <h4 class="text-lg font-semibold text-white mb-4">Business Information</h4>
-                    <div class="space-y-3">
-                        <div>
-                            <label class="text-sm text-white">Business Name</label>
-                            <p class="text-white">${vendor.application_data?.business_name || 'N/A'}</p>
-                        </div>
-                        <div>
-                            <label class="text-sm text-white">Business Type</label>
-                            <p class="text-white">${vendor.application_data?.business_type || 'N/A'}</p>
-                        </div>
-                        <div>
-                            <label class="text-sm text-white">Registration Number</label>
-                            <p class="text-white">${vendor.application_data?.registration_number || 'N/A'}</p>
-                        </div>
-                        <div>
-                            <label class="text-sm text-white">Years in Business</label>
-                            <p class="text-white">${vendor.application_data?.years_in_business || 'N/A'}</p>
-                        </div>
-                    </div>
+    <!-- Image Modal -->
+    <div id="imageModal" class="fixed inset-0 bg-black bg-opacity-90 hidden z-50">
+        <div class="flex items-center justify-center min-h-screen p-4">
+            <div class="relative max-w-4xl w-full">
+                <div class="flex items-center justify-between mb-4">
+                    <h3 id="imageModalTitle" class="text-xl font-semibold text-white"></h3>
+                    <button onclick="closeImageModal()" class="text-white hover:text-white">
+                        <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path>
+                        </svg>
+                    </button>
                 </div>
-                <div>
-                    <h4 class="text-lg font-semibold text-white mb-4">Contact Information</h4>
-                    <div class="space-y-3">
-                        <div>
-                            <label class="text-sm text-white">Email</label>
-                            <p class="text-white">${vendor.user?.email || 'N/A'}</p>
-                        </div>
-                        <div>
-                            <label class="text-sm text-white">Phone</label>
-                            <p class="text-white">${vendor.application_data?.phone || 'N/A'}</p>
-                        </div>
-                        <div>
-                            <label class="text-sm text-white">Address</label>
-                            <p class="text-white">${vendor.application_data?.address || 'N/A'}</p>
-                        </div>
-                    </div>
-                </div>
+                <img id="imageModalImg" src="" alt="" class="w-full h-auto max-h-[80vh] object-contain rounded-lg">
             </div>
-            
-            <div class="mt-6">
-                <h4 class="text-lg font-semibold text-white mb-4">Scores</h4>
-                <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
-                    <div class="glass-card p-4 rounded-xl border border-gray-700/50">
-                        <div class="text-center">
-                            <p class="text-sm text-white">Financial Score</p>
-                            <p class="text-2xl font-bold text-white">${vendor.score_financial || 0}%</p>
-                        </div>
-                    </div>
-                    <div class="glass-card p-4 rounded-xl border border-gray-700/50">
-                        <div class="text-center">
-                            <p class="text-sm text-white">Reputation Score</p>
-                            <p class="text-2xl font-bold text-white">${vendor.score_reputation || 0}%</p>
-                        </div>
-                    </div>
-                    <div class="glass-card p-4 rounded-xl border border-gray-700/50">
-                        <div class="text-center">
-                            <p class="text-sm text-white">Compliance Score</p>
-                            <p class="text-2xl font-bold text-white">${vendor.score_compliance || 0}%</p>
-                        </div>
-                    </div>
-                </div>
-            </div>
-        `;
-        
-        document.getElementById('vendorModalContent').innerHTML = content;
-    }
+        </div>
+    </div>
 
-    function closeVendorModal() {
-        document.getElementById('vendorModal').classList.add('hidden');
-    }
+    <!-- Add vendor-management.js for Visit button functionality via Vite -->
+    @vite(['resources/js/vendor-management.js'])
 
-    function approveVendor(vendorId) {
-        if (confirm('Are you sure you want to approve this vendor?')) {
-            fetch(`/admin/vendors/${vendorId}/approve`, {
-                method: 'POST',
-                headers: {
-                    'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').getAttribute('content'),
-                    'Content-Type': 'application/json',
-                }
-            })
-            .then(response => response.json())
-            .then(data => {
-                if (data.success) {
-                    location.reload();
-                } else {
-                    alert('Error approving vendor');
-                }
-            });
-        }
-    }
-
-    function rejectVendor(vendorId) {
-        const reason = prompt('Please provide a reason for rejection:');
-        if (reason) {
-            fetch(`/admin/vendors/${vendorId}/reject`, {
-                method: 'POST',
-                headers: {
-                    'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').getAttribute('content'),
-                    'Content-Type': 'application/json',
-                },
-                body: JSON.stringify({ reason: reason })
-            })
-            .then(response => response.json())
-            .then(data => {
-                if (data.success) {
-                    location.reload();
-                } else {
-                    alert('Error rejecting vendor');
-                }
-            });
-        }
-    }
-
-    function scheduleVisit(vendorId) {
-        // Show visit scheduling modal
-        showVisitModal(vendorId);
-    }
-
-    function showVisitModal(vendorId) {
-        const modal = document.createElement('div');
-        modal.id = 'visitModal';
-        modal.className = 'fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50';
-        modal.innerHTML = `
-            <div class="glass-card rounded-2xl max-w-md w-full mx-4">
-                <div class="p-6 border-b border-gray-700">
-                    <div class="flex items-center justify-between">
-                        <h3 class="text-xl font-semibold text-white">Schedule Facility Visit</h3>
-                        <button onclick="closeVisitModal()" class="text-white hover:text-gray-300">
-                            <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path>
-                            </svg>
-                        </button>
-                    </div>
-                </div>
-                <div class="p-6">
-                    <form id="visitForm">
-                        <div class="mb-4">
-                            <label class="block text-sm font-medium text-white mb-2">Visit Date & Time</label>
-                            <input type="datetime-local" id="scheduled_at" name="scheduled_at" required
-                                   class="w-full px-4 py-2 bg-gray-800/50 border border-gray-600 rounded-lg text-white focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                                   min="${new Date().toISOString().slice(0, 16)}">
-                        </div>
-                        <div class="mb-6">
-                            <label class="block text-sm font-medium text-white mb-2">Notes (Optional)</label>
-                            <textarea id="notes" name="notes" rows="3"
-                                      class="w-full px-4 py-2 bg-gray-800/50 border border-gray-600 rounded-lg text-white focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                                      placeholder="Add any notes about the visit..."></textarea>
-                        </div>
-                        <div class="flex justify-end space-x-3">
-                            <button type="button" onclick="closeVisitModal()" 
-                                    class="px-4 py-2 bg-gray-600 hover:bg-gray-700 text-white rounded-lg transition-colors">
-                                Cancel
-                            </button>
-                            <button type="submit" 
-                                    class="px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg transition-colors">
-                                Schedule Visit
-                            </button>
-                        </div>
-                    </form>
-                </div>
-            </div>
-        `;
-        
-        document.body.appendChild(modal);
-        
-        // Handle form submission
-        document.getElementById('visitForm').addEventListener('submit', function(e) {
-            e.preventDefault();
-            submitVisitSchedule(vendorId);
-        });
-    }
-
-    function closeVisitModal() {
-        const modal = document.getElementById('visitModal');
-        if (modal) {
-            modal.remove();
-        }
-    }
-
-    function submitVisitSchedule(vendorId) {
-        const scheduledAt = document.getElementById('scheduled_at').value;
-        const notes = document.getElementById('notes').value;
-        
-        if (!scheduledAt) {
-            alert('Please select a date and time for the visit.');
-            return;
-        }
-        
-        // Show loading state
-        const submitBtn = document.querySelector('#visitForm button[type="submit"]');
-        const originalText = submitBtn.textContent;
-        submitBtn.textContent = 'Scheduling...';
-        submitBtn.disabled = true;
-        
-        fetch(`/admin/vendors/${vendorId}/schedule-visit`, {
-            method: 'POST',
-            headers: {
-                'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').getAttribute('content'),
-                'Content-Type': 'application/json',
-            },
-            body: JSON.stringify({
-                scheduled_at: scheduledAt,
-                notes: notes
-            })
-        })
-        .then(response => response.json())
-        .then(data => {
-            if (data.success) {
-                closeVisitModal();
-                alert('Facility visit scheduled successfully!');
-                location.reload(); // Refresh to show updated status
-            } else {
-                alert('Error scheduling visit: ' + (data.message || 'Unknown error'));
-            }
-        })
-        .catch(error => {
-            alert('Error scheduling visit: ' + error.message);
-        })
-        .finally(() => {
-            submitBtn.textContent = originalText;
-            submitBtn.disabled = false;
-        });
-    }
-
-    // Search and filter functionality
-    document.getElementById('search').addEventListener('input', function(e) {
-        const searchTerm = e.target.value.toLowerCase();
-        const rows = document.querySelectorAll('tbody tr');
-        
-        rows.forEach(row => {
-            const text = row.textContent.toLowerCase();
-            row.style.display = text.includes(searchTerm) ? '' : 'none';
-        });
-    });
-
-    document.getElementById('status-filter').addEventListener('change', function(e) {
-        const status = e.target.value.toLowerCase();
-        const rows = document.querySelectorAll('tbody tr');
-        
-        rows.forEach(row => {
-            const statusCell = row.querySelector('td:nth-child(3)').textContent.toLowerCase();
-            row.style.display = !status || statusCell.includes(status) ? '' : 'none';
-        });
-    });
-    </script>
 </body>
 </html> 

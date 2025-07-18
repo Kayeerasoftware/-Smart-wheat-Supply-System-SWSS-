@@ -377,6 +377,102 @@
                         </div>
                     </div>
 
+                    <!-- Customer Segmentation Section -->
+                    @if(isset($customerSegments) && !empty($customerSegments))
+                    <div class="row mb-4">
+                        <div class="col-12">
+                            <div class="card stats-card">
+                                <div class="card-body">
+                                    <h5 class="card-title mb-3">
+                                        <i class="bi bi-people-fill me-2"></i>Customer Segmentation for Production Planning
+                                    </h5>
+                                    @if(isset($customerSegments['customers']))
+                                        <div class="row">
+                                            @php
+                                                $segmentBreakdown = [];
+                                                $totalDemand = 0;
+                                                $avgOrderValue = 0;
+                                                $highValueCustomers = 0;
+                                                foreach($customerSegments['customers'] as $customer) {
+                                                    $segment = $customer['segment_name'] ?? 'Unknown';
+                                                    $segmentBreakdown[$segment] = ($segmentBreakdown[$segment] ?? 0) + 1;
+                                                    $totalDemand += $customer['total_spent'] ?? 0;
+                                                    $avgOrderValue += $customer['avg_order_value'] ?? 0;
+                                                    if(in_array($segment, ['Champions', 'Big Spenders'])) {
+                                                        $highValueCustomers++;
+                                                    }
+                                                }
+                                                $avgOrderValue = count($customerSegments['customers']) > 0 ? $avgOrderValue / count($customerSegments['customers']) : 0;
+                                            @endphp
+                                            @foreach($segmentBreakdown as $segment => $count)
+                                                <div class="col-md-2 mb-2">
+                                                    <div class="text-center p-2 rounded" style="background: rgba(102, 126, 234, 0.1);">
+                                                        <h6 class="mb-1">{{ $segment }}</h6>
+                                                        <h4 class="mb-0 text-primary">{{ $count }}</h4>
+                                                        <small class="text-muted">{{ round(($count / count($customerSegments['customers'])) * 100, 1) }}%</small>
+                                                    </div>
+                                                </div>
+                                            @endforeach
+                                        </div>
+                                        <div class="row mt-3">
+                                            <div class="col-md-3">
+                                                <div class="text-center">
+                                                    <h6 class="text-muted">Total Demand</h6>
+                                                    <h5 class="text-success">${{ number_format($totalDemand, 0) }}</h5>
+                                                </div>
+                                            </div>
+                                            <div class="col-md-3">
+                                                <div class="text-center">
+                                                    <h6 class="text-muted">Avg Order Value</h6>
+                                                    <h5 class="text-info">${{ number_format($avgOrderValue, 0) }}</h5>
+                                                </div>
+                                            </div>
+                                            <div class="col-md-3">
+                                                <div class="text-center">
+                                                    <h6 class="text-muted">High-Value Customers</h6>
+                                                    <h5 class="text-warning">{{ $highValueCustomers }}</h5>
+                                                </div>
+                                            </div>
+                                            <div class="col-md-3">
+                                                <div class="text-center">
+                                                    <h6 class="text-muted">Total Customers</h6>
+                                                    <h5 class="text-primary">{{ count($customerSegments['customers']) }}</h5>
+                                                </div>
+                                            </div>
+                                        </div>
+                                        @if(isset($productionRecommendations) && count($productionRecommendations) > 0)
+                                            <div class="mt-3">
+                                                <h6 class="text-primary mb-2">Production Recommendations:</h6>
+                                                <ul class="list-unstyled">
+                                                    @foreach(array_slice($productionRecommendations, 0, 3) as $recommendation)
+                                                        <li class="mb-1">
+                                                            <i class="bi bi-lightbulb text-warning me-2"></i>
+                                                            {{ $recommendation }}
+                                                        </li>
+                                                    @endforeach
+                                                </ul>
+                                            </div>
+                                        @endif
+                                        <div class="mt-3">
+                                            <a href="{{ route('manufacturer.customer-segments') }}" class="btn btn-outline-primary btn-sm">
+                                                <i class="bi bi-graph-up me-1"></i>View Detailed Analysis
+                                            </a>
+                                            <a href="{{ route('manufacturer.production-insights') }}" class="btn btn-outline-success btn-sm ms-2">
+                                                <i class="bi bi-gear me-1"></i>Production Insights
+                                            </a>
+                                        </div>
+                                    @else
+                                        <p class="text-muted">No customer segmentation data available for production planning.</p>
+                                        <a href="{{ route('manufacturer.run-segmentation') }}" class="btn btn-primary btn-sm">
+                                            <i class="bi bi-play-circle me-1"></i>Run Segmentation Analysis
+                                        </a>
+                                    @endif
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    @endif
+
                     <div class="row">
                         <div class="col-md-8">
                             <div class="card content-card">

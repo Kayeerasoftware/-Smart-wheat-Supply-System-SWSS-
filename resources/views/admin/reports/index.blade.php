@@ -3,7 +3,8 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>SWSS Reports Dashboard</title>
+    <title>SWSS Admin Reports</title>
+    @vite(['resources/css/app.css', 'resources/js/app.js'])
     <script src="https://cdn.tailwindcss.com"></script>
     <link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@300;400;500;600;700&family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
     <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
@@ -284,10 +285,8 @@
         </div>
         
         <div class="flex items-center space-x-6">
-            <div class="relative">
-                <i class="fas fa-bell text-gray-300 text-xl cursor-pointer hover:text-white transition-colors"></i>
-                <span class="notification-dot absolute -top-1 -right-1 w-3 h-3 rounded-full"></span>
-            </div>
+            {{-- Replace bell icon with notification dropdown --}}
+            <x-admin-notification-dropdown />
             <div class="flex items-center space-x-3">
                 <div class="text-right">
                     <p class="text-sm font-semibold">{{ Auth::user()->name }}</p>
@@ -364,7 +363,7 @@
                         <p class="text-gray-400">Comprehensive system reports and analytics</p>
                     </div>
                     <div class="flex items-center space-x-4">
-                        <select id="dateRange" class="bg-transparent border border-gray-600 rounded-lg px-3 py-2 text-sm">
+                        <select id="dateRange" class="bg-gray-800 border border-gray-600 rounded-lg px-3 py-2 text-sm text-white focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500">
                             <option value="7" {{ $dateRange == 7 ? 'selected' : '' }}>Last 7 days</option>
                             <option value="30" {{ $dateRange == 30 ? 'selected' : '' }}>Last 30 days</option>
                             <option value="90" {{ $dateRange == 90 ? 'selected' : '' }}>Last 90 days</option>
@@ -383,6 +382,34 @@
                         </div>
                     </div>
                 </div>
+            </div>
+
+            <!-- Automated Report Delivery Settings -->
+            <div class="glass-card p-6 rounded-2xl mb-8">
+                <h2 class="text-xl font-bold font-space mb-4">Automated Report Delivery Settings</h2>
+                <form method="POST" action="{{ route('admin.reports.save-delivery-settings') }}" class="space-y-4">
+                    @csrf
+                    <div class="flex flex-col md:flex-row md:items-center md:space-x-8">
+                        <div class="mb-4 md:mb-0">
+                            <label class="block font-medium mb-2">Frequency</label>
+                            <select name="frequency" class="bg-gray-800 border border-gray-600 rounded-lg px-3 py-2 text-sm text-white focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500">
+                                <option value="5min" {{ (old('frequency', $deliverySettings['frequency'] ?? '') == '5min') ? 'selected' : '' }}>5 minutes (test)</option>
+                                <option value="daily" {{ (old('frequency', $deliverySettings['frequency'] ?? '') == 'daily') ? 'selected' : '' }}>Daily</option>
+                                <option value="weekly" {{ (old('frequency', $deliverySettings['frequency'] ?? '') == 'weekly') ? 'selected' : '' }}>Weekly</option>
+                                <option value="monthly" {{ (old('frequency', $deliverySettings['frequency'] ?? '') == 'monthly') ? 'selected' : '' }}>Monthly</option>
+                            </select>
+                        </div>
+                        <div>
+                            <label class="block font-medium mb-2">Delivery Method</label>
+                            <select name="method" class="bg-gray-800 border border-gray-600 rounded-lg px-3 py-2 text-sm text-white focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500">
+                                <option value="notification" {{ (old('method', $deliverySettings['method'] ?? '') == 'notification') ? 'selected' : '' }}>Notification</option>
+                                <option value="email" {{ (old('method', $deliverySettings['method'] ?? '') == 'email') ? 'selected' : '' }}>Email</option>
+                                <option value="both" {{ (old('method', $deliverySettings['method'] ?? '') == 'both') ? 'selected' : '' }}>Both</option>
+                            </select>
+                        </div>
+                    </div>
+                    <button type="submit" class="btn-primary px-6 py-2 rounded-lg font-semibold">Save Settings</button>
+                </form>
             </div>
 
             <!-- Stats Grid -->
@@ -405,7 +432,7 @@
                     <h3 class="text-3xl font-bold font-space mb-2">{{ $vendorStats['total_vendors'] }}</h3>
                     <p class="text-gray-400 mb-2">Total Vendors</p>
                     <div class="progress-bar">
-                        <div class="progress-fill" style="width: {{ ($vendorStats['approved_vendors'] / $vendorStats['total_vendors']) * 100 }}%"></div>
+                        <div class="progress-fill" style="width: {{ ($vendorStats['approved_vendors'] / max($vendorStats['total_vendors'], 1)) * 100 }}%"></div>
                     </div>
                 </div>
 
@@ -416,7 +443,7 @@
                     <h3 class="text-3xl font-bold font-space mb-2">{{ $productStats['total_products'] }}</h3>
                     <p class="text-gray-400 mb-2">Total Products</p>
                     <div class="progress-bar">
-                        <div class="progress-fill" style="width: {{ (($productStats['total_products'] - $productStats['out_of_stock_products']) / $productStats['total_products']) * 100 }}%"></div>
+                        <div class="progress-fill" style="width: {{ (($productStats['total_products'] - $productStats['out_of_stock_products']) / max($productStats['total_products'], 1)) * 100 }}%"></div>
                     </div>
                 </div>
 

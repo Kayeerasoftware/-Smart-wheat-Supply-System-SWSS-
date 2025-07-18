@@ -16,19 +16,14 @@ class Product extends Model
         'name',
         'description',
         'category_id',
-        'brand',
+        'quantity_on_hand',
+        'warehouse_id',
+        'is_raw_material',
+        'is_finished_good',
+        'type', // Add this line
         'unit_of_measure',
         'unit_price',
         'cost_price',
-        'reorder_point',
-        'reorder_quantity',
-        'supplier_id',
-        'manufacturer_id',
-        'specifications',
-        'images',
-        'status',
-        'is_raw_material',
-        'is_finished_good',
     ];
 
     protected $casts = [

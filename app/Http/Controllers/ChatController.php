@@ -15,8 +15,11 @@ class ChatController extends Controller
 {
     public function index()
     {
-        $this->markUserOnline();
         $currentUser = Auth::user();
+        if (!$currentUser) {
+            return redirect()->route('login');
+        }
+        $this->markUserOnline();
         
         // Check if current user is a supplier with restricted access
         $isRestrictedSupplier = false;

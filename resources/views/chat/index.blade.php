@@ -28,14 +28,16 @@
             font-family: 'Space Grotesk', 'Inter', sans-serif;
         }
 
+        /* Enhanced Glass Card Effect */
         .glass-card {
             background: rgba(255, 255, 255, 0.08);
             backdrop-filter: blur(20px);
             border: 1px solid rgba(255, 255, 255, 0.1);
-            border-radius: 20px;
+            border-radius: 1.25rem;
             transition: all 0.4s cubic-bezier(0.25, 0.8, 0.25, 1);
             position: relative;
             overflow: hidden;
+            box-shadow: 0 8px 32px rgba(0, 0, 0, 0.2);
         }
 
         .glass-card::before {
@@ -55,56 +57,77 @@
             box-shadow: 0 20px 40px rgba(0, 0, 0, 0.3);
         }
 
-        .sidebar {
+        /* Enhanced Chat Layout */
+        .chat-container {
+            display: flex;
+            flex-direction: column;
+            height: calc(100vh - 4rem);
+            background: linear-gradient(135deg, #0f0f23 0%, #1a1a2e 100%);
+        }
+
+        /* Contacts Panel */
+        .contacts-panel {
             background: rgba(0, 0, 0, 0.4);
             backdrop-filter: blur(20px);
             border-right: 1px solid rgba(255, 255, 255, 0.1);
             transition: all 0.3s ease;
-            position: fixed;
-            top: 5rem;
-            left: 0;
-            height: 100vh;
-            z-index: 40;
+            height: 100%;
             overflow-y: auto;
         }
 
-        .sidebar-item {
+        .contact-item {
             transition: all 0.3s ease;
             position: relative;
             overflow: hidden;
+            border-radius: 0.75rem;
         }
 
-        .sidebar-item::before {
-            content: '';
-            position: absolute;
-            top: 0;
-            left: -100%;
-            width: 100%;
-            height: 100%;
-            background: var(--primary-gradient);
-            transition: left 0.3s ease;
-            z-index: -1;
+        .contact-item:hover {
+            background: rgba(255, 255, 255, 0.05);
+            transform: translateX(3px);
         }
 
-        .sidebar-item:hover::before,
-        .sidebar-item.active::before {
-            left: 0;
+        .contact-item.active {
+            background: linear-gradient(90deg, rgba(59, 130, 246, 0.2) 0%, rgba(59, 130, 246, 0.1) 100%);
+            border-left: 2px solid rgba(59, 130, 246, 0.5);
         }
 
-        .sidebar-item:hover,
-        .sidebar-item.active {
-            color: white;
-            transform: translateX(5px);
+        /* Chat Area */
+        .chat-area {
+            display: flex;
+            flex-direction: column;
+            flex: 1;
+            background: linear-gradient(145deg, rgba(15, 15, 35, 0.9) 0%, rgba(26, 26, 46, 0.95) 100%);
         }
 
-        .gradient-text {
-            color: #60a5fa;
-            background: none;
-            -webkit-background-clip: initial;
-            -webkit-text-fill-color: initial;
+        /* Chat Header */
+        .chat-header {
+            background: rgba(0, 0, 0, 0.3);
+            backdrop-filter: blur(10px);
+            border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+            padding: 1rem;
+            z-index: 10;
         }
 
+        /* Messages Container */
+        .messages-container {
+            flex: 1;
+            overflow-y: auto;
+            padding: 1rem;
+            background: linear-gradient(rgba(15, 15, 35, 0.7), rgba(15, 15, 35, 0.9));
+        }
+
+        /* Input Area */
+        .input-area {
+            background: rgba(0, 0, 0, 0.3);
+            backdrop-filter: blur(10px);
+            border-top: 1px solid rgba(255, 255, 255, 0.1);
+            padding: 1rem;
+        }
+
+        /* Message Bubbles */
         .chat-message {
+            margin-bottom: 0.7rem;
             animation: slideIn 0.3s ease-out;
         }
 
@@ -119,238 +142,193 @@
             }
         }
 
-        .notification-dot {
-            background: var(--secondary-gradient);
-            animation: pulse 2s infinite;
+        .chat-message .bubble {
+            position: relative;
+            display: inline-block;
+            padding: 0.75rem 1.25rem;
+            border-radius: 1.25rem;
+            max-width: 70%;
+            font-size: 0.95rem;
+            line-height: 1.5;
+            margin-bottom: 0.25rem;
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+            transition: all 0.2s ease;
+            word-break: break-word;
+            white-space: pre-line;
         }
 
-        @keyframes pulse {
-            0%, 100% { opacity: 1; }
-            50% { opacity: 0.5; }
+        .chat-message.sent .bubble {
+            background: linear-gradient(135deg, #3b82f6 0%, #6366f1 100%);
+            color: #fff;
+            border-bottom-right-radius: 0.5rem;
+            box-shadow: 0 4px 16px rgba(59, 130, 246, 0.2);
         }
 
-        /* Fixed Navigation Bar */
-        .fixed-nav {
-                position: fixed;
-            top: 0;
-            left: 0;
-            right: 0;
-                z-index: 50;
-            background: rgba(0, 0, 0, 0.4);
-            backdrop-filter: blur(20px);
-            border-bottom: 1px solid rgba(255, 255, 255, 0.1);
-            }
-
-            .main-content {
-            margin-left: 16rem; /* 256px for sidebar width */
-            margin-top: 5rem; /* 80px for navigation height */
-            min-height: calc(100vh - 5rem);
+        .chat-message.received .bubble {
+            background: rgba(35, 39, 47, 0.9);
+            color: #e5e7eb;
+            border-bottom-left-radius: 0.5rem;
+            border: 1px solid rgba(55, 65, 81, 0.5);
+            box-shadow: 0 4px 12px rgba(30, 41, 59, 0.15);
         }
 
-        .logo-pulse {
-            animation: logoPulse 2s ease-in-out infinite;
+        .chat-message .bubble:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 6px 16px rgba(0, 0, 0, 0.15);
         }
 
-        @keyframes logoPulse {
-            0%, 100% { transform: scale(1); }
-            50% { transform: scale(1.05); }
+        .chat-message .bubble .timestamp {
+            display: block;
+            font-size: 0.75rem;
+            color: rgba(255, 255, 255, 0.6);
+            margin-top: 0.25rem;
+            text-align: right;
         }
 
-        ::-webkit-scrollbar {
-            width: 6px;
-        }
-
-        ::-webkit-scrollbar-track {
-            background: rgba(255, 255, 255, 0.1);
-        }
-
-        ::-webkit-scrollbar-thumb {
-            background: var(--accent-gradient);
-            border-radius: 3px;
-        }
-
-        /* Custom scrollbar for contacts list */
-        .contacts-scroll::-webkit-scrollbar {
-            width: 4px;
-        }
-
-        .contacts-scroll::-webkit-scrollbar-track {
-            background: rgba(255, 255, 255, 0.05);
-            border-radius: 2px;
-        }
-
-        .contacts-scroll::-webkit-scrollbar-thumb {
-            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-            border-radius: 2px;
-        }
-
-        .contacts-scroll::-webkit-scrollbar-thumb:hover {
-            background: linear-gradient(135deg, #764ba2 0%, #667eea 100%);
-        }
-
-        .form-input {
+        /* Input Styling */
+        .message-input {
             background: rgba(255, 255, 255, 0.05);
             border: 1px solid rgba(255, 255, 255, 0.1);
             color: white;
             backdrop-filter: blur(10px);
+            transition: all 0.3s ease;
         }
 
-        .form-input:focus {
+        .message-input:focus {
             background: rgba(255, 255, 255, 0.1);
             border-color: rgba(79, 172, 254, 0.5);
             box-shadow: 0 0 0 3px rgba(79, 172, 254, 0.1);
         }
 
-        .form-input::placeholder {
-            color: rgba(255, 255, 255, 0.5);
-        }
-
-        .btn-primary {
-            background: var(--primary-gradient);
-            border: none;
-            position: relative;
-            overflow: hidden;
+        /* Send Button */
+        .send-button {
+            background: linear-gradient(135deg, #3b82f6 0%, #6366f1 100%);
             transition: all 0.3s ease;
         }
 
-        .btn-primary::before {
-            content: '';
-            position: absolute;
-            top: 0;
-            left: -100%;
-            width: 100%;
-            height: 100%;
-            background: var(--secondary-gradient);
-            transition: left 0.3s ease;
-            z-index: -1;
-        }
-
-        .btn-primary:hover::before {
-            left: 0;
-        }
-
-        .btn-primary:hover {
+        .send-button:hover {
             transform: translateY(-2px);
-            box-shadow: 0 10px 25px rgba(0, 0, 0, 0.3);
+            box-shadow: 0 6px 16px rgba(59, 130, 246, 0.3);
+            background: linear-gradient(135deg, #3b82f6 0%, #6366f1 100%);
         }
 
-        /* Mobile adjustments */
+        /* Scrollbars */
+        ::-webkit-scrollbar {
+            width: 6px;
+        }
+
+        ::-webkit-scrollbar-track {
+            background: rgba(255, 255, 255, 0.05);
+        }
+
+        ::-webkit-scrollbar-thumb {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            border-radius: 3px;
+        }
+
+        /* Avatar Colors */
+        .avatar-blue { background: linear-gradient(135deg, #3b82f6 0%, #2563eb 100%); }
+        .avatar-purple { background: linear-gradient(135deg, #8b5cf6 0%, #7c3aed 100%); }
+        .avatar-pink { background: linear-gradient(135deg, #ec4899 0%, #db2777 100%); }
+        .avatar-red { background: linear-gradient(135deg, #ef4444 0%, #dc2626 100%); }
+        .avatar-orange { background: linear-gradient(135deg, #f97316 0%, #ea580c 100%); }
+        .avatar-green { background: linear-gradient(135deg, #10b981 0%, #059669 100%); }
+        .avatar-teal { background: linear-gradient(135deg, #14b8a6 0%, #0d9488 100%); }
+
+        /* Status Indicators */
+        .status-online { background: #10b981; box-shadow: 0 0 0 2px rgba(16, 185, 129, 0.3); }
+        .status-offline { background: #6b7280; box-shadow: 0 0 0 2px rgba(107, 114, 128, 0.3); }
+        .status-typing { background: #f59e0b; box-shadow: 0 0 0 2px rgba(245, 158, 11, 0.3); }
+
+        /* Typing Animation */
+        @keyframes pulse {
+            0%, 100% { opacity: 1; }
+            50% { opacity: 0.5; }
+        }
+
+        .typing-indicator {
+            animation: pulse 1.5s infinite;
+        }
+
+        /* Responsive Adjustments */
         @media (max-width: 768px) {
-            .sidebar {
+            .contacts-panel {
+                width: 100%;
+                position: absolute;
+                z-index: 40;
                 transform: translateX(-100%);
-            position: fixed;
-            z-index: 50;
-                height: 100vh;
-        }
-
-            .sidebar.open {
+            }
+            
+            .contacts-panel.open {
                 transform: translateX(0);
             }
-
-        .main-content {
+            
+            .chat-area {
                 margin-left: 0;
-                margin-top: 5rem;
             }
-        }
-
-        .chat-message .bubble {
-            position: relative;
-            display: inline-block;
-            padding: 0.7rem 1.1rem;
-            border-radius: 1.2rem;
-            max-width: 60%;
-            font-size: 1rem;
-            line-height: 1.45;
-            margin-bottom: 0.15rem;
-            box-shadow: 0 2px 8px 0 rgba(0,0,0,0.08);
-            font-weight: 500;
-        }
-        .chat-message.sent .bubble {
-            background: linear-gradient(135deg, #3b82f6 0%, #6366f1 100%);
-            color: #fff;
-            border-bottom-right-radius: 0.5rem;
-            box-shadow: 0 2px 12px 0 rgba(59,130,246,0.15);
-        }
-        .chat-message.received .bubble {
-            background: #23272f;
-            color: #e5e7eb;
-            border-bottom-left-radius: 0.5rem;
-            border: 1.5px solid #374151;
-            box-shadow: 0 2px 8px 0 rgba(30,41,59,0.10);
-        }
-        .chat-message .bubble::after {
-            content: '';
-            position: absolute;
-            bottom: 0;
-            width: 0;
-            height: 0;
-        }
-        .chat-message.sent .bubble::after {
-            right: -12px;
-            border-left: 12px solid #6366f1;
-            border-top: 12px solid transparent;
-            border-bottom: 0 solid transparent;
-        }
-        .chat-message.received .bubble::after {
-            left: -12px;
-            border-right: 12px solid #23272f;
-            border-top: 12px solid transparent;
-            border-bottom: 0 solid transparent;
-        }
-        .chat-message .bubble .timestamp {
-            display: block;
-            font-size: 0.85rem;
-            color: #a1a1aa;
-            margin-top: 0.3rem;
-            text-align: right;
-            opacity: 0.8;
-        }
-        .chat-message {
-            margin-bottom: 0.7rem !important;
         }
     </style>
 </head>
-<body class="text-white overflow-x-hidden">
-    <div class="flex flex-col min-h-screen min-w-full justify-between bg-gray-900">
-        <!-- Back Button -->
-        <div class="w-full flex items-center justify-start p-4 bg-gray-900 border-b border-gray-800 shadow z-20">
-            <button onclick="history.back()" class="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-lg flex items-center gap-2 shadow">
+<body class="text-gray-100 overflow-hidden">
+    <!-- Navigation Bar -->
+    <div class="fixed-nav w-full h-16 flex items-center justify-between px-6 bg-gray-900/80 backdrop-blur-md border-b border-gray-800">
+        <div class="flex items-center space-x-4">
+            <button onclick="history.back()" class="flex items-center space-x-2 text-blue-400 hover:text-blue-300 transition-colors">
                 <i class="fas fa-arrow-left"></i>
-                <span class="font-semibold text-base">Back</span>
+                <span class="font-medium">Back</span>
             </button>
         </div>
-        <!-- Chat Layout -->
-        <div class="flex flex-1 w-full h-full min-h-0 min-w-0">
-            <!-- Contacts List -->
-            <div class="w-1/3 md:w-1/4 bg-gray-800 p-4 border-r border-gray-800 flex flex-col h-screen sticky top-0 left-0 z-30" style="max-height: 100vh;">
-                <div class="flex-1 overflow-y-auto contacts-scroll">
-                    <div class="mb-4">
-                        <input id="contact-search" type="text" class="form-input w-full px-3 py-2 rounded-lg bg-gray-900 border border-gray-700 text-white placeholder-gray-400 focus:bg-gray-800 focus:ring-2 focus:ring-blue-400 transition" placeholder="Search contacts..." />
+        <div class="flex items-center space-x-4">
+            <div class="text-sm font-medium text-blue-400">
+                SWSS {{ ucfirst(Auth::user()->role) }} Dashboard
+            </div>
+        </div>
+    </div>
+
+    <!-- Main Chat Container -->
+    <div class="chat-container">
+        <div class="flex flex-1 h-full">
+            <!-- Contacts Panel -->
+            <div class="contacts-panel w-1/3 md:w-1/4 flex flex-col">
+                <div class="p-4 border-b border-gray-800">
+                    <h2 class="text-xl font-bold text-blue-400 mb-2">Contacts</h2>
+                    <div class="relative">
+                        <input id="contact-search" type="text" 
+                               class="message-input w-full px-4 py-2 rounded-lg bg-gray-800/70 text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-500/30" 
+                               placeholder="Search contacts...">
+                        <i class="fas fa-search absolute right-3 top-3 text-gray-400"></i>
                     </div>
-                    <h2 class="text-lg font-bold mb-4 text-blue-400 font-space tracking-wide">Contacts</h2>
+                </div>
+                <div class="flex-1 overflow-y-auto p-2">
                     <ul id="contacts-list" class="space-y-2"></ul>
                 </div>
             </div>
+
             <!-- Chat Area -->
-            <div class="flex-1 flex flex-col bg-gray-900 p-0">
+            <div class="chat-area flex-1 flex flex-col">
                 <!-- Chat Header -->
-                <div id="chat-header" class="flex items-center gap-4 px-6 py-4 border-b border-gray-800 bg-gray-900 sticky top-0 z-10 min-h-[72px]" style="min-height:72px;">
-                    <div id="chat-avatar" class="w-12 h-12 rounded-full flex items-center justify-center text-xl font-bold bg-blue-700 text-white shadow border-2 border-gray-800"></div>
-                    <div>
+                <div id="chat-header" class="chat-header flex items-center space-x-4">
+                    <div id="chat-avatar" class="w-10 h-10 rounded-full flex items-center justify-center text-lg font-bold text-white shadow-md"></div>
+                    <div class="flex-1">
                         <div id="chat-contact-name" class="font-semibold text-lg"></div>
-                        <div class="flex items-center gap-2">
+                        <div class="flex items-center space-x-2">
                             <span id="chat-contact-role" class="text-xs text-gray-400"></span>
-                            <span id="chat-contact-status" class="w-2 h-2 rounded-full bg-gray-400 inline-block"></span>
-                            <span id="chat-contact-status-text" class="text-xs text-gray-400 ml-1"></span>
+                            <span id="chat-contact-status" class="w-2 h-2 rounded-full"></span>
+                            <span id="chat-contact-status-text" class="text-xs text-gray-400"></span>
+                            <span id="chat-typing-indicator" class="text-xs text-blue-400 hidden">typing...</span>
                         </div>
                     </div>
                 </div>
-                <!-- Chat Messages -->
-                <div id="chat-messages" class="flex-1 overflow-y-auto px-6 py-4 space-y-2 bg-gray-900"></div>
-                <!-- Message Input -->
-                <div class="flex gap-2 px-6 py-4 bg-gray-900 sticky bottom-0 z-10 border-t border-gray-800">
-                    <input id="message-input" type="text" class="form-input flex-1 px-4 py-2 rounded-lg bg-gray-800 border border-gray-700 text-white placeholder-gray-400 focus:bg-gray-700 focus:ring-2 focus:ring-blue-400 transition" placeholder="Type your message..." autocomplete="off" />
-                    <button id="send-btn" class="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-lg flex items-center gap-2 shadow">
+
+                <!-- Messages Container -->
+                <div id="chat-messages" class="messages-container space-y-4 p-4"></div>
+
+                <!-- Input Area -->
+                <div class="input-area flex items-center space-x-2">
+                    <input id="message-input" type="text" 
+                           class="message-input flex-1 px-4 py-3 rounded-lg bg-gray-800/70 text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-500/30" 
+                           placeholder="Type your message..." autocomplete="off">
+                    <button id="send-btn" class="send-button px-5 py-3 rounded-lg text-white font-medium flex items-center space-x-2">
                         <i class="fas fa-paper-plane"></i>
                         <span>Send</span>
                     </button>
@@ -396,8 +374,8 @@
                         <i class="fas fa-comments text-4xl mb-4"></i>
                         <p class="text-lg font-medium">Chat with ${username}</p>
                         <p class="text-sm">Start typing to send a message</p>
-                </div>
-            `;
+                    </div>
+                `;
                 
                 // Remove active class from all contacts
                 document.querySelectorAll('.contact-item').forEach(contact => {
@@ -417,26 +395,26 @@
             if (message && selectedUserId) {
                 // Add message to chat
                 const chatMessages = document.getElementById('chatMessages');
-            const messageElement = document.createElement('div');
+                const messageElement = document.createElement('div');
                 messageElement.className = 'chat-message mb-4';
-            messageElement.innerHTML = `
+                messageElement.innerHTML = `
                     <div class="flex justify-end">
                         <div class="bg-blue-500 text-white px-4 py-2 rounded-lg max-w-xs">
-                    <p class="text-sm">${message}</p>
+                            <p class="text-sm">${message}</p>
                             <p class="text-xs opacity-75 mt-1">${new Date().toLocaleTimeString()}</p>
-                </div>
-                </div>
-            `;
+                        </div>
+                    </div>
+                `;
                 chatMessages.appendChild(messageElement);
             
                 // Clear input
                 messageInput.value = '';
             
-            // Scroll to bottom
+                // Scroll to bottom
                 chatMessages.scrollTop = chatMessages.scrollHeight;
             
                 // Simulate reply (in real app, this would come from server)
-            setTimeout(() => {
+                setTimeout(() => {
                     const replyElement = document.createElement('div');
                     replyElement.className = 'chat-message mb-4';
                     replyElement.innerHTML = `
@@ -444,9 +422,9 @@
                             <div class="bg-gray-600 text-white px-4 py-2 rounded-lg max-w-xs">
                                 <p class="text-sm">Thank you for your message. An administrator will respond shortly.</p>
                                 <p class="text-xs opacity-75 mt-1">${new Date().toLocaleTimeString()}</p>
-                </div>
-                </div>
-            `;
+                            </div>
+                        </div>
+                    `;
                     chatMessages.appendChild(replyElement);
                     chatMessages.scrollTop = chatMessages.scrollHeight;
                 }, 1000);
@@ -458,6 +436,22 @@
             if (e.key === 'Enter') {
                 document.getElementById('sendMessage').click();
             }
+        });
+    </script>
+
+    <script type="module">
+        import Echo from 'laravel-echo';
+        import Pusher from 'pusher-js';
+        window.Pusher = Pusher;
+        window.Echo = new Echo({
+            broadcaster: 'pusher',
+            key: import.meta.env.VITE_PUSHER_APP_KEY,
+            cluster: import.meta.env.VITE_PUSHER_APP_CLUSTER ?? 'mt1',
+            wsHost: import.meta.env.VITE_PUSHER_HOST ?? `ws-${import.meta.env.VITE_PUSHER_APP_CLUSTER}.pusher.com`,
+            wsPort: import.meta.env.VITE_PUSHER_PORT ?? 80,
+            wssPort: import.meta.env.VITE_PUSHER_PORT ?? 443,
+            forceTLS: (import.meta.env.VITE_PUSHER_SCHEME ?? 'https') === 'https',
+            enabledTransports: ['ws', 'wss'],
         });
     </script>
 
@@ -480,9 +474,9 @@
             return (parts[0][0] + parts[1][0]).toUpperCase();
         }
 
-        // Utility: random color for avatar (based on user id)
+        // Utility: random color for avatar
         function getAvatarColor(id) {
-            const colors = ['from-blue-500 to-purple-600','from-pink-500 to-yellow-500','from-green-500 to-teal-400','from-indigo-500 to-blue-400','from-red-500 to-orange-400'];
+            const colors = ['avatar-blue', 'avatar-purple', 'avatar-pink', 'avatar-green', 'avatar-teal', 'avatar-orange', 'avatar-red'];
             return colors[id % colors.length];
         }
 
@@ -506,37 +500,47 @@
             list.innerHTML = '';
             filteredContacts.forEach(contact => {
                 const li = document.createElement('li');
-                li.className = 'flex items-center gap-3 p-2 rounded-lg cursor-pointer transition hover:bg-gray-700/50' + (currentContactId === contact.id ? ' bg-gradient-to-r from-blue-700/60 to-purple-700/60 text-white' : '');
+                li.className = `contact-item flex items-center p-3 rounded-lg transition-all ${currentContactId === contact.id ? 'active' : ''}`;
                 li.onclick = () => selectContact(contact.id);
+                
                 // Avatar
                 const avatar = document.createElement('div');
-                avatar.className = `w-10 h-10 rounded-full flex items-center justify-center font-bold text-lg bg-gradient-to-br ${getAvatarColor(contact.id)} text-white`;
+                avatar.className = `w-10 h-10 rounded-full flex items-center justify-center text-white font-bold ${getAvatarColor(contact.id)}`;
                 avatar.textContent = getInitials(contact.username || contact.name || contact.email);
+                
                 // Info
                 const info = document.createElement('div');
-                info.className = 'flex flex-col';
-                const name = document.createElement('span');
-                name.className = 'font-semibold';
+                info.className = 'flex-1 ml-3 overflow-hidden';
+                const name = document.createElement('div');
+                name.className = 'font-medium truncate';
                 name.textContent = contact.username || contact.name || contact.email;
+                const meta = document.createElement('div');
+                meta.className = 'flex items-center text-xs text-gray-400 mt-1';
+                
+                // Role
                 const role = document.createElement('span');
-                role.className = 'text-xs text-gray-400';
+                role.className = 'truncate';
                 role.textContent = contact.role;
+                
                 // Status dot
                 const statusDot = document.createElement('span');
-                statusDot.className = 'w-2 h-2 rounded-full mt-1 ' + (isUserOnline(contact.id) ? 'bg-green-400' : 'bg-gray-400');
+                statusDot.className = `w-2 h-2 rounded-full ml-2 ${isUserOnline(contact.id) ? 'status-online' : 'status-offline'}`;
+                
+                meta.appendChild(role);
+                meta.appendChild(statusDot);
                 info.appendChild(name);
-                info.appendChild(role);
-                // Compose
-                li.appendChild(avatar);
-                li.appendChild(info);
-                li.appendChild(statusDot);
-                // Add unread badge if needed
+                info.appendChild(meta);
+                
+                // Unread badge
                 if (unreadCounts[contact.id]) {
                     const badge = document.createElement('span');
-                    badge.className = 'ml-2 bg-red-500 text-white text-xs rounded-full px-2 py-0.5';
+                    badge.className = 'ml-auto bg-red-500 text-white text-xs rounded-full px-2 py-0.5';
                     badge.textContent = unreadCounts[contact.id];
                     li.appendChild(badge);
                 }
+                
+                li.appendChild(avatar);
+                li.appendChild(info);
                 list.appendChild(li);
             });
         }
@@ -558,7 +562,6 @@
             currentContactId = id;
             renderContacts();
             fetchMessages(id);
-            // Update chat header
             updateChatHeader();
         }
 
@@ -570,33 +573,38 @@
             const role = document.getElementById('chat-contact-role');
             const statusDot = document.getElementById('chat-contact-status');
             const statusText = document.getElementById('chat-contact-status-text');
+            const typingIndicator = document.getElementById('chat-typing-indicator');
+            
             if (!currentContactId || !contactMap[currentContactId]) {
                 avatar.textContent = '';
                 name.textContent = '';
                 role.textContent = '';
-                statusDot.className = 'w-2 h-2 rounded-full bg-gray-400';
+                statusDot.className = 'w-2 h-2 rounded-full status-offline';
                 statusText.textContent = '';
+                typingIndicator.classList.add('hidden');
                 return;
             }
+            
             const contact = contactMap[currentContactId];
-            avatar.className = `w-12 h-12 rounded-full flex items-center justify-center text-xl font-bold bg-gradient-to-br ${getAvatarColor(contact.id)} text-white`;
+            avatar.className = `w-10 h-10 rounded-full flex items-center justify-center text-white font-bold ${getAvatarColor(contact.id)}`;
             avatar.textContent = getInitials(contact.username || contact.name || contact.email);
             name.textContent = contact.username || contact.name || contact.email;
             role.textContent = contact.role;
-            statusDot.className = 'w-2 h-2 rounded-full ' + (isUserOnline(contact.id) ? 'bg-green-400' : 'bg-gray-400');
-            statusText.textContent = isUserOnline(contact.id) ? 'Online' : 'Offline';
-            if (currentContactId && typingUsers.includes(currentContactId)) {
-                let typingEl = document.getElementById('chat-typing-indicator');
-                if (!typingEl) {
-                    typingEl = document.createElement('span');
-                    typingEl.id = 'chat-typing-indicator';
-                    typingEl.className = 'ml-2 text-xs text-blue-400 animate-pulse';
-                    statusText.parentNode.appendChild(typingEl);
-                }
-                typingEl.textContent = 'Typing...';
+            
+            if (isUserOnline(contact.id)) {
+                statusDot.className = 'w-2 h-2 rounded-full status-online';
+                statusText.textContent = 'Online';
             } else {
-                const typingEl = document.getElementById('chat-typing-indicator');
-                if (typingEl) typingEl.remove();
+                statusDot.className = 'w-2 h-2 rounded-full status-offline';
+                statusText.textContent = 'Offline';
+            }
+            
+            if (typingUsers.includes(currentContactId)) {
+                typingIndicator.classList.remove('hidden');
+                typingIndicator.classList.add('typing-indicator');
+            } else {
+                typingIndicator.classList.add('hidden');
+                typingIndicator.classList.remove('typing-indicator');
             }
         }
 
@@ -615,13 +623,34 @@
             const chatBox = document.getElementById('chat-messages');
             if (!chatBox) return;
             chatBox.innerHTML = '';
+            
+            if (messages.length === 0) {
+                chatBox.innerHTML = `
+                    <div class="flex flex-col items-center justify-center h-full text-gray-400 py-12">
+                        <i class="fas fa-comments text-4xl mb-4 opacity-50"></i>
+                        <p class="text-lg font-medium">No messages yet</p>
+                        <p class="text-sm">Start the conversation with ${contactMap[currentContactId]?.username || contactMap[currentContactId]?.name || contactMap[currentContactId]?.email || 'this contact'}</p>
+                    </div>
+                `;
+                return;
+            }
+            
             messages.forEach(msg => {
                 const div = document.createElement('div');
                 const isSent = msg.sender_id == userId;
-                div.className = 'chat-message flex w-full animate-fadein ' + (isSent ? 'justify-end sent' : 'justify-start received');
-                div.innerHTML = `<div class='bubble'>${msg.message}<span class='timestamp'>${new Date(msg.created_at).toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'})}</span></div>`;
+                div.className = `chat-message flex w-full ${isSent ? 'justify-end sent' : 'justify-start received'}`;
+                
+                const bubble = document.createElement('div');
+                bubble.className = 'bubble';
+                bubble.innerHTML = `
+                    ${msg.message}
+                    <span class="timestamp">${new Date(msg.created_at).toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'})}</span>
+                `;
+                
+                div.appendChild(bubble);
                 chatBox.appendChild(div);
             });
+            
             chatBox.scrollTop = chatBox.scrollHeight;
         }
 
@@ -629,8 +658,10 @@
         function sendMessage() {
             const input = document.getElementById('message-input');
             if (!input.value.trim() || !currentContactId) return;
+            
             const messageText = input.value.trim();
             input.value = '';
+            
             // Show the message instantly (optimistic UI)
             const tempMsg = {
                 sender_id: userId,
@@ -639,8 +670,10 @@
                 created_at: new Date().toISOString(),
                 _temp: true // mark as temporary
             };
+            
             messages.push(tempMsg);
             renderMessages();
+            
             fetch('/chat/send-message', {
                 method: 'POST',
                 headers: {
@@ -668,17 +701,22 @@
             });
         }
 
-        // Listen for Enter key on input and send button
+        // Initialize chat
         document.addEventListener('DOMContentLoaded', function() {
             fetchContacts();
+            
             // Set up send button
             const sendBtn = document.getElementById('send-btn');
             if (sendBtn) sendBtn.onclick = sendMessage;
+            
             // Enter key
             const input = document.getElementById('message-input');
-            if (input) input.addEventListener('keydown', function(e) {
-                if (e.key === 'Enter') sendMessage();
-            });
+            if (input) {
+                input.addEventListener('keydown', function(e) {
+                    if (e.key === 'Enter') sendMessage();
+                });
+            }
+            
             // Listen for real-time messages
             if (window.Echo) {
                 window.Echo.private('chat.' + userId)
@@ -692,10 +730,6 @@
                     });
             }
         });
-        // Animation for chat bubbles
-        const style = document.createElement('style');
-        style.innerHTML = `@keyframes fadein { from { opacity: 0; transform: translateY(10px);} to { opacity: 1; transform: translateY(0);} } .animate-fadein { animation: fadein 0.3s; }`;
-        document.head.appendChild(style);
 
         // Poll online status every 15 seconds
         setInterval(fetchOnlineStatus, 15000);
@@ -738,6 +772,7 @@
                 body: JSON.stringify({ contact_id: currentContactId })
             });
         }
+        
         // Listen for typing events
         document.addEventListener('DOMContentLoaded', function() {
             const input = document.getElementById('message-input');
@@ -749,6 +784,7 @@
                 });
             }
         });
+        
         // Poll for typing status every 2 seconds
         setInterval(fetchTyping, 2000);
         function fetchTyping() {
@@ -761,4 +797,4 @@
         }
     </script>
 </body>
-</html> 
+</html>

@@ -344,7 +344,7 @@
         }
     </style>
 </head>
-<body class="text-white overflow-x-hidden">
+<body class="text-white overflow-x-hidden" x-data="{ activeTab: 'overview' }">
     <!-- Top Navigation -->
     <nav class="fixed-nav px-6 py-4 flex justify-between items-center">
         <div class="flex items-center space-x-4">
@@ -418,9 +418,17 @@
                     <i class="fas fa-user-cog w-5"></i>
                     <span class="font-medium">Profile Settings</span>
                 </a>
+                <a href="{{ route('supplier.analytics') }}" class="sidebar-item flex items-center space-x-3 px-4 py-3 rounded-lg text-gray-300">
+                    <i class="fas fa-chart-line w-5"></i>
+                    <span class="font-medium">Analytics</span>
+                </a>
+                <a href="{{ route('supplier.performance') }}" class="sidebar-item flex items-center space-x-3 px-4 py-3 rounded-lg text-gray-300">
+                    <i class="fas fa-trophy w-5"></i>
+                    <span class="font-medium">Performance</span>
+                </a>
                 
                 <div class="pt-6 mt-6 border-t border-gray-700">
-                    <form action="/logout" method="POST">
+                    <form action="{{ route('logout') }}" method="POST">
                         @csrf
                         <button type="submit" class="sidebar-item flex items-center space-x-3 px-4 py-3 rounded-lg text-red-400 hover:text-red-300 w-full text-left">
                             <i class="fas fa-sign-out-alt w-5"></i>
@@ -432,18 +440,27 @@
         </aside>
 
         <!-- Main Content -->
-        <main class="main-content p-6">
-            <!-- Header -->
-            <div class="mb-8">
-                <div class="flex justify-between items-center">
+        <main class="main-content ml-64 w-full p-0 md:p-8 flex flex-col min-h-[calc(100vh-5rem)]">
+            <!-- Profile Header -->
+            <div class="relative w-full rounded-3xl overflow-hidden mb-8" style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); min-height: 220px;">
+                <div class="absolute inset-0 bg-black/30"></div>
+                <div class="relative z-10 flex flex-col md:flex-row items-center md:items-end justify-between px-8 py-8 md:py-12">
+                    <div class="flex items-center space-x-6">
+                        <img src="{{ $profileData['personal_info']['avatar'] ?? 'https://ui-avatars.com/api/?name=User&background=667eea&color=fff&size=128' }}" alt="Profile Avatar" class="w-32 h-32 rounded-full border-4 border-white shadow-lg">
                     <div>
-                        <h1 class="text-3xl font-bold font-space gradient-text">Profile Settings</h1>
-                        <p class="mt-2 text-sm text-gray-400">Manage your account and preferences</p>
+                            <h2 class="text-3xl md:text-4xl font-bold text-white font-space mb-1">{{ $profileData['personal_info']['name'] ?? 'User Name' }}</h2>
+                            <p class="text-lg text-blue-100 mb-1">{{ $profileData['personal_info']['position'] ?? 'Position' }}</p>
+                            <p class="text-sm text-blue-200">Member since {{ \Carbon\Carbon::parse($profileData['account_stats']['member_since'] ?? now())->format('M Y') }}</p>
                     </div>
-                    <div class="flex space-x-3">
-                        <button type="submit" form="profile-form" class="btn-primary inline-flex items-center px-6 py-3 rounded-xl font-semibold text-sm text-white uppercase tracking-wider">
+                    </div>
+                    <div class="mt-6 md:mt-0 flex space-x-3">
+                        <button type="submit" form="profile-form" class="btn-primary inline-flex items-center px-6 py-3 rounded-xl font-semibold text-sm text-white uppercase tracking-wider shadow-lg">
                             <i class="fas fa-save mr-2"></i>
                             Save Changes
+                        </button>
+                        <button type="button" onclick="openPasswordModal()" class="inline-flex items-center px-6 py-3 rounded-xl font-semibold text-sm text-white bg-gradient-to-r from-pink-500 to-rose-500 hover:from-pink-600 hover:to-rose-600 shadow-lg">
+                            <i class="fas fa-key mr-2"></i>
+                            Change Password
                         </button>
                     </div>
                 </div>
@@ -458,7 +475,6 @@
                     </div>
                 </div>
             @endif
-
             @if(session('error'))
                 <div class="glass-card p-4 mb-6 border-l-4 border-red-500 bg-red-500/10">
                     <div class="flex items-center">
@@ -467,7 +483,6 @@
                     </div>
                 </div>
             @endif
-
             @if($errors->any())
                 <div class="glass-card p-4 mb-6 border-l-4 border-red-500 bg-red-500/10">
                     <div class="flex items-center mb-2">
@@ -491,7 +506,6 @@
                     <h3 class="text-3xl font-bold font-space mb-2">{{ $profileData['account_stats']['total_orders'] ?? 0 }}</h3>
                     <p class="text-gray-400 mb-2">Total Orders</p>
                 </div>
-
                 <div class="stat-card p-6 rounded-2xl text-center float-animation" style="animation-delay: 0.2s">
                     <div class="w-16 h-16 bg-gradient-to-r from-green-500 to-teal-600 rounded-2xl flex items-center justify-center mx-auto mb-4">
                         <i class="fas fa-handshake text-2xl text-white"></i>
@@ -499,7 +513,6 @@
                     <h3 class="text-3xl font-bold font-space mb-2">{{ $profileData['account_stats']['total_contracts'] ?? 0 }}</h3>
                     <p class="text-gray-400 mb-2">Active Contracts</p>
                 </div>
-
                 <div class="stat-card p-6 rounded-2xl text-center float-animation" style="animation-delay: 0.4s">
                     <div class="w-16 h-16 bg-gradient-to-r from-yellow-500 to-orange-600 rounded-2xl flex items-center justify-center mx-auto mb-4">
                         <i class="fas fa-star text-2xl text-white"></i>
@@ -507,7 +520,6 @@
                     <h3 class="text-3xl font-bold font-space mb-2">{{ $profileData['account_stats']['average_rating'] ?? 0 }}</h3>
                     <p class="text-gray-400 mb-2">Average Rating</p>
                 </div>
-
                 <div class="stat-card p-6 rounded-2xl text-center float-animation" style="animation-delay: 0.6s">
                     <div class="w-16 h-16 bg-gradient-to-r from-pink-500 to-rose-600 rounded-2xl flex items-center justify-center mx-auto mb-4">
                         <i class="fas fa-truck text-2xl text-white"></i>
@@ -518,42 +530,26 @@
             </div>
 
             <!-- Profile Sections -->
-            <form id="profile-form" method="POST" action="{{ route('profile-settings.save') }}" class="grid grid-cols-1 lg:grid-cols-2 gap-8">
+            <form id="profile-form" method="POST" action="{{ route('profile-settings.save') }}" class="grid grid-cols-1 lg:grid-cols-2 gap-8 mb-12">
                 @csrf
                 <!-- Personal Information -->
-                <div class="glass-card p-6 rounded-2xl">
-                    <div class="flex items-center justify-between mb-6">
+                <div class="glass-card p-8 rounded-2xl flex flex-col gap-6">
+                    <div class="flex items-center gap-4 mb-2">
+                        <i class="fas fa-user text-2xl text-blue-400"></i>
                         <h3 class="text-xl font-bold font-space">Personal Information</h3>
-                        <button type="button" class="text-blue-400 hover:text-blue-300 transition-colors">
-                            <i class="fas fa-edit"></i>
-                        </button>
                     </div>
-                    
-                    <div class="flex items-center space-x-4 mb-6">
-                        <img src="{{ $profileData['personal_info']['avatar'] ?? 'https://ui-avatars.com/api/?name=User&background=667eea&color=fff&size=128' }}" 
-                             alt="Profile Avatar" class="w-20 h-20 rounded-full border-4 border-blue-500/20">
-                        <div>
-                            <h4 class="text-lg font-semibold">{{ $profileData['personal_info']['name'] ?? 'User Name' }}</h4>
-                            <p class="text-gray-400">{{ $profileData['personal_info']['position'] ?? 'Position' }}</p>
-                            <p class="text-sm text-gray-500">Member since {{ \Carbon\Carbon::parse($profileData['account_stats']['member_since'] ?? now())->format('M Y') }}</p>
-                        </div>
-                    </div>
-
                     <div class="space-y-4">
                         <div>
                             <label class="block text-sm font-medium text-gray-300 mb-1">Full Name</label>
-                            <input type="text" name="name" value="{{ $profileData['personal_info']['name'] ?? '' }}" 
-                                   class="form-input w-full rounded-lg px-3 py-2">
+                            <input type="text" name="name" value="{{ $profileData['personal_info']['name'] ?? '' }}" class="form-input w-full rounded-lg px-3 py-2">
                         </div>
                         <div>
                             <label class="block text-sm font-medium text-gray-300 mb-1">Email</label>
-                            <input type="email" name="email" value="{{ $profileData['personal_info']['email'] ?? '' }}" 
-                                   class="form-input w-full rounded-lg px-3 py-2">
+                            <input type="email" name="email" value="{{ $profileData['personal_info']['email'] ?? '' }}" class="form-input w-full rounded-lg px-3 py-2">
                         </div>
                         <div>
                             <label class="block text-sm font-medium text-gray-300 mb-1">Phone</label>
-                            <input type="tel" name="phone" value="{{ $profileData['personal_info']['phone'] ?? '' }}" 
-                                   class="form-input w-full rounded-lg px-3 py-2">
+                            <input type="tel" name="phone" value="{{ $profileData['personal_info']['phone'] ?? '' }}" class="form-input w-full rounded-lg px-3 py-2">
                         </div>
                         <div>
                             <label class="block text-sm font-medium text-gray-300 mb-1">Address</label>
@@ -565,21 +561,16 @@
                         </div>
                     </div>
                 </div>
-
                 <!-- Business Information -->
-                <div class="glass-card p-6 rounded-2xl">
-                    <div class="flex items-center justify-between mb-6">
+                <div class="glass-card p-8 rounded-2xl flex flex-col gap-6">
+                    <div class="flex items-center gap-4 mb-2">
+                        <i class="fas fa-building text-2xl text-purple-400"></i>
                         <h3 class="text-xl font-bold font-space">Business Information</h3>
-                        <button type="button" class="text-blue-400 hover:text-blue-300 transition-colors">
-                            <i class="fas fa-edit"></i>
-                        </button>
                     </div>
-
                     <div class="space-y-4">
                         <div>
                             <label class="block text-sm font-medium text-gray-300 mb-1">Business Name</label>
-                            <input type="text" name="business_name" value="{{ $profileData['business_info']['business_name'] ?? '' }}" 
-                                   class="form-input w-full rounded-lg px-3 py-2">
+                            <input type="text" name="business_name" value="{{ $profileData['business_info']['business_name'] ?? '' }}" class="form-input w-full rounded-lg px-3 py-2">
                         </div>
                         <div class="grid grid-cols-2 gap-4">
                             <div>
@@ -593,20 +584,17 @@
                             </div>
                             <div>
                                 <label class="block text-sm font-medium text-gray-300 mb-1">Founded Year</label>
-                                <input type="number" name="founded_year" value="{{ $profileData['business_info']['founded_year'] ?? '' }}" 
-                                       class="form-input w-full rounded-lg px-3 py-2">
+                                <input type="number" name="founded_year" value="{{ $profileData['business_info']['founded_year'] ?? '' }}" class="form-input w-full rounded-lg px-3 py-2">
                             </div>
                         </div>
                         <div class="grid grid-cols-2 gap-4">
                             <div>
                                 <label class="block text-sm font-medium text-gray-300 mb-1">Tax ID</label>
-                                <input type="text" name="tax_id" value="{{ $profileData['business_info']['tax_id'] ?? '' }}" 
-                                       class="form-input w-full rounded-lg px-3 py-2">
+                                <input type="text" name="tax_id" value="{{ $profileData['business_info']['tax_id'] ?? '' }}" class="form-input w-full rounded-lg px-3 py-2">
                             </div>
                             <div>
                                 <label class="block text-sm font-medium text-gray-300 mb-1">Registration Number</label>
-                                <input type="text" name="registration_number" value="{{ $profileData['business_info']['registration_number'] ?? '' }}" 
-                                       class="form-input w-full rounded-lg px-3 py-2">
+                                <input type="text" name="registration_number" value="{{ $profileData['business_info']['registration_number'] ?? '' }}" class="form-input w-full rounded-lg px-3 py-2">
                             </div>
                         </div>
                         <div>
@@ -627,16 +615,12 @@
                         </div>
                     </div>
                 </div>
-
                 <!-- Contact Preferences -->
-                <div class="glass-card p-6 rounded-2xl">
-                    <div class="flex items-center justify-between mb-6">
+                <div class="glass-card p-8 rounded-2xl flex flex-col gap-6">
+                    <div class="flex items-center gap-4 mb-2">
+                        <i class="fas fa-bell text-2xl text-yellow-400"></i>
                         <h3 class="text-xl font-bold font-space">Contact Preferences</h3>
-                        <button type="button" class="text-blue-400 hover:text-blue-300 transition-colors">
-                            <i class="fas fa-edit"></i>
-                        </button>
                     </div>
-
                     <div class="space-y-4">
                         <div class="flex items-center justify-between">
                             <div>
@@ -710,16 +694,12 @@
                         </div>
                     </div>
                 </div>
-
                 <!-- Security Settings -->
-                <div class="glass-card p-6 rounded-2xl">
-                    <div class="flex items-center justify-between mb-6">
+                <div class="glass-card p-8 rounded-2xl flex flex-col gap-6">
+                    <div class="flex items-center gap-4 mb-2">
+                        <i class="fas fa-lock text-2xl text-pink-400"></i>
                         <h3 class="text-xl font-bold font-space">Security Settings</h3>
-                        <button type="button" class="text-blue-400 hover:text-blue-300 transition-colors">
-                            <i class="fas fa-edit"></i>
-                        </button>
                     </div>
-
                     <div class="space-y-6">
                         <div class="flex items-center justify-between">
                             <div>
@@ -761,6 +741,18 @@
                     </div>
                 </div>
             </form>
+            <div x-show="activeTab === 'analytics'" class="tab-content">
+                <div class="glass-card p-6 mb-6">
+                    <h3 class="text-xl font-semibold text-white mb-4">Analytics Dashboard</h3>
+                    <p class="text-gray-300">Analytics tab is working! You should see this content.</p>
+                </div>
+            </div>
+            <div x-show="activeTab === 'performance'" class="tab-content">
+                <div class="glass-card p-6 mb-6">
+                    <h3 class="text-xl font-semibold text-white mb-4">Performance Dashboard</h3>
+                    <p class="text-gray-300">Performance tab is working! You should see this content.</p>
+                </div>
+            </div>
         </main>
     </div>
 

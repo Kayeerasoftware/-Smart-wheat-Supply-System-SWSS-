@@ -127,10 +127,7 @@
             </div>
         </div>
         <div class="flex items-center space-x-6">
-            <div class="relative">
-                <i class="fas fa-bell text-gray-300 text-xl cursor-pointer hover:text-white transition-colors"></i>
-                <span class="notification-dot absolute -top-1 -right-1 w-3 h-3 rounded-full"></span>
-            </div>
+            <x-admin-notification-dropdown />
             <div class="flex items-center space-x-3">
                 <div class="text-right">
                     <p class="text-sm font-semibold">{{ Auth::user()->username ?? Auth::user()->name ?? 'Admin' }}</p>

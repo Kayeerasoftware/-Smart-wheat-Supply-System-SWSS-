@@ -350,7 +350,8 @@
                 <p class="text-xl text-gray-400">Ready to revolutionize your supply chain? Let's talk.</p>
             </div>
             <div class="max-w-2xl mx-auto">
-                <form action="/contact" method="POST" class="modern-form space-y-6 fade-in">
+                <form action="{{ route('contact.store') }}" method="POST" class="modern-form space-y-6 fade-in">
+                    @csrf
                     <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
                         <input type="text" id="name" name="name" placeholder="Your Name" class="w-full p-4 rounded-2xl" required>
                         <input type="email" id="email" name="email" placeholder="Your Email" class="w-full p-4 rounded-2xl" required>
@@ -362,6 +363,11 @@
                         </button>
                     </div>
                 </form>
+                @if(session('success'))
+                    <div class="mt-6 text-green-400 text-center font-semibold">
+                        {{ session('success') }}
+                    </div>
+                @endif
             </div>
         </div>
     </section>
