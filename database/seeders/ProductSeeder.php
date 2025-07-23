@@ -6,6 +6,7 @@ use Illuminate\Database\Console\Seeds\WithoutModelEvents;
 use Illuminate\Database\Seeder;
 use App\Models\Product;
 use App\Models\Category;
+use App\Models\User;
 use Illuminate\Support\Str;
 
 class ProductSeeder extends Seeder
@@ -15,6 +16,22 @@ class ProductSeeder extends Seeder
      */
     public function run(): void
     {
+        // Get a supplier user to associate products with
+        $supplier = User::where('role', 'supplier')->first();
+        
+        if (!$supplier) {
+            // Create a supplier user if none exists
+            $supplier = User::create([
+                'username' => 'supplier1',
+                'email' => 'supplier1@example.com',
+                'password' => bcrypt('password'),
+                'role' => 'supplier',
+                'phone' => '+1234567893',
+                'address' => '123 Supplier St, City, State 12345',
+                'status' => 'active'
+            ]);
+        }
+
         $products = [
             [
                 'name' => 'Premium Wheat Flour',
@@ -87,10 +104,13 @@ class ProductSeeder extends Seeder
             $category = Category::where('name', $productData['category_name'])->first();
             
             if ($category) {
-                Product::create([
+                Product::updateOrCreate(
+                    ['name' => $productData['name']],
+                    [
                     'name' => $productData['name'],
                     'sku' => 'SKU-' . strtoupper(Str::random(8)),
                     'category_id' => $category->id,
+                        'supplier_id' => $supplier->id,
                     'brand' => $productData['brand'],
                     'description' => $productData['description'],
                     'unit_of_measure' => $productData['unit_of_measure'],
@@ -101,7 +121,8 @@ class ProductSeeder extends Seeder
                     'is_raw_material' => $productData['is_raw_material'],
                     'is_finished_good' => $productData['is_finished_good'],
                     'status' => 'active',
-                ]);
+                    ]
+                );
             }
         }
     }

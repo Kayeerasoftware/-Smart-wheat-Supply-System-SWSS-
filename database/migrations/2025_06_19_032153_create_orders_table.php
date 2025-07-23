@@ -38,7 +38,7 @@ return new class extends Migration
             $table->string('carrier')->nullable();
             $table->timestamps();
             
-            $table->foreign('customer_id')->references('user_id')->on('users')->onDelete('cascade');
+            $table->foreign('customer_id')->references('id')->on('users')->onDelete('cascade');
             $table->foreign('vendor_id')->references('id')->on('vendors')->onDelete('set null');
             $table->index(['order_number', 'status', 'order_date']);
         });

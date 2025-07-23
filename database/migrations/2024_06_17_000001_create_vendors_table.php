@@ -15,10 +15,11 @@ return new class extends Migration {
             $table->float('score_reputation')->nullable();
             $table->float('score_compliance')->nullable();
             $table->float('total_score')->nullable();
+            $table->json('image_paths')->nullable();
             $table->json('pdf_paths')->nullable();
             $table->timestamps();
 
-            $table->foreign('user_id')->references('user_id')->on('users')->onDelete('cascade');
+            $table->foreign('user_id')->references('id')->on('users')->onDelete('cascade');
         });
     }
 

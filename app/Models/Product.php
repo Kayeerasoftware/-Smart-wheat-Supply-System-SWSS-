@@ -49,6 +49,14 @@ class Product extends Model
     }
 
     /**
+     * Get the supplier that owns the product
+     */
+    public function supplier(): BelongsTo
+    {
+        return $this->belongsTo(User::class, 'supplier_id', 'id');
+    }
+
+    /**
      * Get the inventory records for the product
      */
     public function inventories(): HasMany

@@ -54,11 +54,34 @@
             box-shadow: 0 20px 40px rgba(0, 0, 0, 0.3);
         }
 
+        .fixed-nav {
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            z-index: 50;
+            background: rgba(0, 0, 0, 0.4);
+            backdrop-filter: blur(20px);
+            border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+        }
+
         .sidebar {
             background: rgba(0, 0, 0, 0.4);
             backdrop-filter: blur(20px);
             border-right: 1px solid rgba(255, 255, 255, 0.1);
             transition: all 0.3s ease;
+            position: fixed;
+            top: 5rem;
+            left: 0;
+            height: 100vh;
+            z-index: 40;
+            overflow-y: auto;
+        }
+
+        .main-content {
+            margin-left: 16rem; /* 256px for sidebar width */
+            margin-top: 5rem; /* 80px for navigation height */
+            min-height: calc(100vh - 5rem);
         }
 
         .sidebar-item {
@@ -214,6 +237,10 @@
             .sidebar.open {
                 transform: translateX(0);
             }
+            .main-content {
+                margin-left: 0;
+                margin-top: 5rem;
+            }
         }
 
         .logo-pulse {
@@ -241,13 +268,13 @@
 </head>
 <body class="text-white overflow-x-hidden">
     <!-- Top Navigation -->
-    <nav class="glass-card mx-4 mt-4 mb-6 px-6 py-4 flex justify-between items-center">
+    <nav class="fixed-nav px-6 py-4 flex justify-between items-center">
         <div class="flex items-center space-x-4">
             <button class="md:hidden text-white" id="sidebarToggle">
                 <i class="fas fa-bars text-xl"></i>
             </button>
             <div class="h-10 w-10 rounded-full bg-gradient-to-r from-blue-400 to-purple-500 flex items-center justify-center logo-pulse">
-                <span class="text-white font-bold">S</span>
+                <span class="text-white font-bold">A</span>
             </div>
             <div>
                 <h1 class="text-xl font-bold font-space gradient-text">SWSS Admin</h1>
@@ -274,43 +301,44 @@
 
     <div class="flex">
         <!-- Sidebar -->
-        <aside class="sidebar w-64 min-h-screen p-6" id="sidebar">
+        <aside class="sidebar w-64 p-6" id="sidebar">
             <nav class="space-y-2">
-                <a href="{{ route('dashboard') }}" class="sidebar-item active flex items-center space-x-3 px-4 py-3 rounded-lg text-white">
+                <a href="#" class="sidebar-item active flex items-center space-x-3 px-4 py-3 rounded-lg text-white">
                     <i class="fas fa-tachometer-alt w-5"></i>
                     <span class="font-medium">Dashboard</span>
                 </a>
-                <a href="#" class="sidebar-item flex items-center space-x-3 px-4 py-3 rounded-lg text-gray-300">
-                    <i class="fas fa-users w-5"></i>
-                    <span class="font-medium">User Management</span>
-                </a>
-                <a href="#vendor-management" class="sidebar-item flex items-center space-x-3 px-4 py-3 rounded-lg text-gray-300">
+                <a href="{{ route('admin.vendors') }}" class="sidebar-item flex items-center space-x-3 px-4 py-3 rounded-lg text-gray-300">
                     <i class="fas fa-building w-5"></i>
                     <span class="font-medium">Vendor Management</span>
                 </a>
-                <a href="#" class="sidebar-item flex items-center space-x-3 px-4 py-3 rounded-lg text-gray-300">
-                    <i class="fas fa-wheat-awn w-5"></i>
+                <a href="{{ route('admin.inventory.index') }}" class="sidebar-item flex items-center space-x-3 px-4 py-3 rounded-lg text-gray-300">
+                    <i class="fas fa-seedling w-5"></i>
                     <span class="font-medium">Inventory</span>
                 </a>
-                <a href="#" class="sidebar-item flex items-center space-x-3 px-4 py-3 rounded-lg text-gray-300">
+                <a href="{{ route('admin.supply-chain.index') }}" class="sidebar-item flex items-center space-x-3 px-4 py-3 rounded-lg text-gray-300">
                     <i class="fas fa-truck w-5"></i>
                     <span class="font-medium">Supply Chain</span>
                 </a>
-                <a href="#" class="sidebar-item flex items-center space-x-3 px-4 py-3 rounded-lg text-gray-300">
+                <a href="{{ route('admin.analytics') }}" class="sidebar-item flex items-center space-x-3 px-4 py-3 rounded-lg text-gray-300">
                     <i class="fas fa-chart-line w-5"></i>
                     <span class="font-medium">Analytics</span>
                 </a>
-                <a href="#" class="sidebar-item flex items-center space-x-3 px-4 py-3 rounded-lg text-gray-300">
+                <a href="{{ route('admin.system-settings.index') }}" class="sidebar-item flex items-center space-x-3 px-4 py-3 rounded-lg text-gray-300">
                     <i class="fas fa-cog w-5"></i>
                     <span class="font-medium">System Settings</span>
                 </a>
-                <a href="#" class="sidebar-item flex items-center space-x-3 px-4 py-3 rounded-lg text-gray-300">
+                <a href="{{ route('admin.reports.index') }}" class="sidebar-item flex items-center space-x-3 px-4 py-3 rounded-lg text-gray-300">
                     <i class="fas fa-file-alt w-5"></i>
                     <span class="font-medium">Reports</span>
                 </a>
-                <a href="#" class="sidebar-item flex items-center space-x-3 px-4 py-3 rounded-lg text-gray-300">
+                <a href="{{ route('admin.audit-logs.index') }}" class="sidebar-item flex items-center space-x-3 px-4 py-3 rounded-lg text-gray-300">
                     <i class="fas fa-shield-alt w-5"></i>
                     <span class="font-medium">Audit Logs</span>
+                </a>
+                <a href="{{ route('chat.index') }}" class="sidebar-item flex items-center space-x-3 px-4 py-3 rounded-lg text-gray-300 relative">
+                    <i class="fas fa-comments w-5"></i>
+                    <span class="font-medium">Chat</span>
+                    <span class="notification-dot absolute -top-1 -right-1 w-3 h-3 rounded-full"></span>
                 </a>
                 
                 <div class="pt-6 mt-6 border-t border-gray-700">
@@ -326,7 +354,20 @@
         </aside>
 
         <!-- Main Content -->
-        <main class="flex-1 p-6">
+        <main class="flex-1 p-6 main-content">
+            <div class="flex justify-between items-center mb-8">
+                <div>
+                    <h1 class="text-4xl font-bold font-space gradient-text mb-2">Admin Dashboard</h1>
+                    <p class="text-white text-lg">Overview of system statistics and recent activity</p>
+                </div>
+                <a href="{{ route('admin.dashboard.export.csv') }}" class="btn-primary px-6 py-2 rounded-lg flex items-center gap-2">
+                    <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6v6m0 0v6m0-6h6m-6 0H6"></path>
+                    </svg>
+                    Export Dashboard Data
+                </a>
+            </div>
+
             <!-- Stats Grid -->
             <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
                 <div class="stat-card p-6 rounded-2xl text-center float-animation">
@@ -381,14 +422,14 @@
                     <div class="glass-card p-6 rounded-2xl">
                         <div class="flex justify-between items-center mb-6">
                             <h2 class="text-2xl font-bold font-space">System Performance</h2>
-                            <select class="bg-transparent border border-gray-600 rounded-lg px-3 py-1 text-sm">
-                                <option>Last 7 days</option>
-                                <option>Last 30 days</option>
-                                <option>Last 90 days</option>
+                            <select id="performanceRange" class="bg-gray-800 border border-gray-400 rounded-lg px-3 py-1 text-sm text-white focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent">
+                                <option value="7">Last 7 days</option>
+                                <option value="30">Last 30 days</option>
+                                <option value="90">Last 90 days</option>
                             </select>
                         </div>
-                        <div class="chart-container h-64 flex items-center justify-center">
-                            <canvas id="performanceChart" width="400" height="200"></canvas>
+                        <div class="chart-container h-96 flex items-center justify-center">
+                            <canvas id="performanceChart" width="900" height="400"></canvas>
                         </div>
                     </div>
                 </div>
@@ -397,20 +438,16 @@
                 <div class="glass-card p-6 rounded-2xl">
                     <h2 class="text-xl font-bold font-space mb-6">Quick Actions</h2>
                     <div class="space-y-4">
-                        <a href="#" class="btn-primary w-full py-3 px-4 rounded-xl font-semibold flex items-center justify-center space-x-2 relative overflow-hidden">
-                            <i class="fas fa-user-plus"></i>
-                            <span>Add New User</span>
-                        </a>
-                        <a href="#" class="btn-primary w-full py-3 px-4 rounded-xl font-semibold flex items-center justify-center space-x-2 relative overflow-hidden">
+                        <a href="{{ route('admin.system-settings.index') }}" class="btn-primary w-full py-3 px-4 rounded-xl font-semibold flex items-center justify-center space-x-2 relative overflow-hidden">
                             <i class="fas fa-cogs"></i>
                             <span>System Settings</span>
                         </a>
-                        <a href="#" class="btn-primary w-full py-3 px-4 rounded-xl font-semibold flex items-center justify-center space-x-2 relative overflow-hidden">
+                        <a href="{{ route('admin.reports.index') }}" class="btn-primary w-full py-3 px-4 rounded-xl font-semibold flex items-center justify-center space-x-2 relative overflow-hidden">
                             <i class="fas fa-chart-bar"></i>
                             <span>View Reports</span>
                         </a>
-                        <a href="#" class="btn-primary w-full py-3 px-4 rounded-xl font-semibold flex items-center justify-center space-x-2 relative overflow-hidden">
-                            <i class="fas fa-history"></i>
+                        <a href="{{ route('admin.audit-logs.index') }}" class="btn-primary w-full py-3 px-4 rounded-xl font-semibold flex items-center justify-center space-x-2 relative overflow-hidden">
+                            <i class="fas fa-shield-alt"></i>
                             <span>Audit Logs</span>
                         </a>
                     </div>
@@ -649,81 +686,128 @@
 
         const canvas = document.getElementById('performanceChart');
         const ctx = canvas.getContext('2d');
-        
-        const data = [65, 59, 80, 81, 56, 55, 40, 85, 75, 90, 88, 92];
-        const labels = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
-        
-        function drawChart() {
+
+        function drawChart(labels, data) {
             const canvasWidth = canvas.width;
             const canvasHeight = canvas.height;
-            const padding = 40;
+            const padding = 60;
             const chartWidth = canvasWidth - 2 * padding;
             const chartHeight = canvasHeight - 2 * padding;
-            
+
             ctx.clearRect(0, 0, canvasWidth, canvasHeight);
-            
+
+            // Draw Y axis labels (0, 25%, 50%, 75%, 100% of max)
+            const maxValue = Math.max(...data, 10);
+            ctx.font = '16px Inter';
+            ctx.fillStyle = '#aaa';
+            ctx.textAlign = 'right';
+            ctx.textBaseline = 'middle';
+            for (let i = 0; i <= 4; i++) {
+                const value = Math.round(maxValue * (1 - i / 4));
+                const y = padding + (chartHeight * i) / 4;
+                ctx.fillText(value, padding - 10, y);
+                ctx.beginPath();
+                ctx.moveTo(padding, y);
+                ctx.lineTo(canvasWidth - padding, y);
+                ctx.strokeStyle = '#222';
+                ctx.lineWidth = 1;
+                ctx.setLineDash([4, 4]);
+                ctx.stroke();
+                ctx.setLineDash([]);
+            }
+            ctx.textAlign = 'left';
+            ctx.textBaseline = 'alphabetic';
+
+            // Draw X axis labels (reduce density for 30/90 days)
+            ctx.font = '15px Inter';
+            ctx.fillStyle = '#aaa';
+            let labelStep = 1;
+            if (labels.length > 20 && labels.length <= 40) labelStep = 5;
+            if (labels.length > 40) labelStep = 10;
+            labels.forEach((label, index) => {
+                const x = padding + (index * chartWidth) / (labels.length - 1);
+                // Always show first, last, and step labels
+                if (index === 0 || index === labels.length - 1 || index % labelStep === 0) {
+                    ctx.fillText(label, x - 25, canvasHeight - padding + 30);
+                }
+            });
+
+            // Area gradient
             const gradient = ctx.createLinearGradient(0, 0, 0, canvasHeight);
             gradient.addColorStop(0, 'rgba(79, 172, 254, 0.8)');
             gradient.addColorStop(1, 'rgba(79, 172, 254, 0.1)');
-            
             ctx.fillStyle = gradient;
             ctx.beginPath();
             ctx.moveTo(padding, canvasHeight - padding);
-            
             data.forEach((value, index) => {
                 const x = padding + (index * chartWidth) / (data.length - 1);
-                const y = canvasHeight - padding - (value / 100) * chartHeight;
-                
+                const y = padding + chartHeight - (value / maxValue) * chartHeight;
                 if (index === 0) {
                     ctx.moveTo(x, y);
                 } else {
                     ctx.lineTo(x, y);
                 }
             });
-            
             ctx.lineTo(canvasWidth - padding, canvasHeight - padding);
             ctx.lineTo(padding, canvasHeight - padding);
             ctx.closePath();
             ctx.fill();
-            
+
+            // Line
             ctx.strokeStyle = '#4FACFE';
-            ctx.lineWidth = 3;
+            ctx.lineWidth = 4;
             ctx.beginPath();
-            
             data.forEach((value, index) => {
                 const x = padding + (index * chartWidth) / (data.length - 1);
-                const y = canvasHeight - padding - (value / 100) * chartHeight;
-                
+                const y = padding + chartHeight - (value / maxValue) * chartHeight;
                 if (index === 0) {
                     ctx.moveTo(x, y);
                 } else {
                     ctx.lineTo(x, y);
                 }
             });
-            
             ctx.stroke();
-            
+
+            // Dots and data values
+            ctx.font = 'bold 16px Inter';
+            ctx.textAlign = 'center';
+            ctx.textBaseline = 'bottom';
             data.forEach((value, index) => {
                 const x = padding + (index * chartWidth) / (data.length - 1);
-                const y = canvasHeight - padding - (value / 100) * chartHeight;
-                
+                const y = padding + chartHeight - (value / maxValue) * chartHeight;
                 ctx.beginPath();
-                ctx.arc(x, y, 4, 0, 2 * Math.PI);
+                ctx.arc(x, y, 7, 0, 2 * Math.PI);
                 ctx.fillStyle = '#4FACFE';
                 ctx.fill();
                 ctx.strokeStyle = 'white';
-                ctx.lineWidth = 2;
+                ctx.lineWidth = 3;
                 ctx.stroke();
+                // Draw value above dot
+                ctx.fillStyle = '#fff';
+                ctx.fillText(value, x, y - 12);
             });
+            ctx.textAlign = 'left';
+            ctx.textBaseline = 'alphabetic';
         }
-        
-        setTimeout(drawChart, 1000);
-        
-        window.addEventListener('resize', () => {
-            canvas.width = canvas.offsetWidth;
-            canvas.height = canvas.offsetHeight;
-            drawChart();
+
+        function loadPerformanceData(range = 30) {
+            fetch(`/admin/dashboard/performance-data?range=${range}`)
+                .then(response => response.json())
+                .then(result => {
+                    drawChart(result.labels, result.data);
+                });
+        }
+
+        const rangeSelect = document.getElementById('performanceRange');
+        rangeSelect.addEventListener('change', function() {
+            loadPerformanceData(this.value);
         });
+
+        window.addEventListener('resize', () => {
+            loadPerformanceData(rangeSelect.value);
+        });
+
+        setTimeout(() => loadPerformanceData(rangeSelect.value), 1000);
 
         document.querySelectorAll('.stat-card').forEach(card => {
             card.addEventListener('mouseenter', () => {

@@ -1,0 +1,881 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="csrf-token" content="{{ csrf_token() }}">
+    <title>SWSS Supplier Dashboard - Chat</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script defer src="https://unpkg.com/alpinejs@3.x.x/dist/cdn.min.js"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@300;400;500;600;700&family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
+    <style>
+        :root {
+            --primary-gradient: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            --secondary-gradient: linear-gradient(135deg, #f093fb 0%, #f5576c 100%);
+            --accent-gradient: linear-gradient(135deg, #4facfe 0%, #00f2fe 100%);
+            --dark-gradient: linear-gradient(135deg, #2d1b69 0%, #11998e 100%);
+            --card-gradient: linear-gradient(145deg, rgba(255,255,255,0.1) 0%, rgba(255,255,255,0.05) 100%);
+        }
+
+        body {
+            font-family: 'Inter', sans-serif;
+            background: linear-gradient(135deg, #0f0f23 0%, #1a1a2e 50%, #16213e 100%);
+            min-height: 100vh;
+        }
+
+        .font-space {
+            font-family: 'Space Grotesk', sans-serif;
+        }
+
+        .glass-card {
+            background: rgba(255, 255, 255, 0.08);
+            backdrop-filter: blur(20px);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            border-radius: 20px;
+            transition: all 0.4s cubic-bezier(0.25, 0.8, 0.25, 1);
+            position: relative;
+            overflow: hidden;
+        }
+
+        .glass-card::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            height: 1px;
+            background: linear-gradient(90deg, transparent, rgba(255,255,255,0.4), transparent);
+        }
+
+        .glass-card:hover {
+            transform: translateY(-5px);
+            background: rgba(255, 255, 255, 0.12);
+            border-color: rgba(255, 255, 255, 0.2);
+            box-shadow: 0 20px 40px rgba(0, 0, 0, 0.3);
+        }
+
+        .sidebar {
+            background: rgba(0, 0, 0, 0.4);
+            backdrop-filter: blur(20px);
+            border-right: 1px solid rgba(255, 255, 255, 0.1);
+            transition: all 0.3s ease;
+            position: fixed;
+            top: 5rem;
+            left: 0;
+            height: 100vh;
+            z-index: 40;
+            overflow-y: auto;
+        }
+
+        .sidebar-item {
+            transition: all 0.3s ease;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .sidebar-item::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: -100%;
+            width: 100%;
+            height: 100%;
+            background: var(--primary-gradient);
+            transition: left 0.3s ease;
+            z-index: -1;
+        }
+
+        .sidebar-item:hover::before,
+        .sidebar-item.active::before {
+            left: 0;
+        }
+
+        .sidebar-item:hover,
+        .sidebar-item.active {
+            color: white;
+            transform: translateX(5px);
+        }
+
+        .gradient-text {
+            background: var(--accent-gradient);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+        }
+
+        .chat-message {
+            animation: slideIn 0.3s ease-out;
+        }
+
+        @keyframes slideIn {
+            from {
+                opacity: 0;
+                transform: translateY(10px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        .notification-dot {
+            background: var(--secondary-gradient);
+            animation: pulse 2s infinite;
+        }
+
+        @keyframes pulse {
+            0%, 100% { opacity: 1; }
+            50% { opacity: 0.5; }
+        }
+
+        /* Fixed Navigation Bar */
+        .fixed-nav {
+                position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+                z-index: 50;
+            background: rgba(0, 0, 0, 0.4);
+            backdrop-filter: blur(20px);
+            border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+            }
+
+            .main-content {
+            margin-left: 16rem; /* 256px for sidebar width */
+            margin-top: 5rem; /* 80px for navigation height */
+            min-height: calc(100vh - 5rem);
+        }
+
+        .logo-pulse {
+            animation: logoPulse 2s ease-in-out infinite;
+        }
+
+        @keyframes logoPulse {
+            0%, 100% { transform: scale(1); }
+            50% { transform: scale(1.05); }
+        }
+
+        ::-webkit-scrollbar {
+            width: 6px;
+        }
+
+        ::-webkit-scrollbar-track {
+            background: rgba(255, 255, 255, 0.1);
+        }
+
+        ::-webkit-scrollbar-thumb {
+            background: var(--accent-gradient);
+            border-radius: 3px;
+        }
+
+        /* Custom scrollbar for contacts list */
+        .contacts-scroll::-webkit-scrollbar {
+            width: 4px;
+        }
+
+        .contacts-scroll::-webkit-scrollbar-track {
+            background: rgba(255, 255, 255, 0.05);
+            border-radius: 2px;
+        }
+
+        .contacts-scroll::-webkit-scrollbar-thumb {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            border-radius: 2px;
+        }
+
+        .contacts-scroll::-webkit-scrollbar-thumb:hover {
+            background: linear-gradient(135deg, #764ba2 0%, #667eea 100%);
+        }
+
+        .form-input {
+            background: rgba(255, 255, 255, 0.05);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            color: white;
+            backdrop-filter: blur(10px);
+        }
+
+        .form-input:focus {
+            background: rgba(255, 255, 255, 0.1);
+            border-color: rgba(79, 172, 254, 0.5);
+            box-shadow: 0 0 0 3px rgba(79, 172, 254, 0.1);
+        }
+
+        .form-input::placeholder {
+            color: rgba(255, 255, 255, 0.5);
+        }
+
+        .btn-primary {
+            background: var(--primary-gradient);
+            border: none;
+            position: relative;
+            overflow: hidden;
+            transition: all 0.3s ease;
+        }
+
+        .btn-primary::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: -100%;
+            width: 100%;
+            height: 100%;
+            background: var(--secondary-gradient);
+            transition: left 0.3s ease;
+            z-index: -1;
+        }
+
+        .btn-primary:hover::before {
+            left: 0;
+        }
+
+        .btn-primary:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 10px 25px rgba(0, 0, 0, 0.3);
+        }
+
+        /* Mobile adjustments */
+        @media (max-width: 768px) {
+            .sidebar {
+                transform: translateX(-100%);
+            position: fixed;
+            z-index: 50;
+                height: 100vh;
+        }
+
+            .sidebar.open {
+                transform: translateX(0);
+            }
+
+        .main-content {
+                margin-left: 0;
+                margin-top: 5rem;
+            }
+        }
+    </style>
+</head>
+<body class="text-white overflow-x-hidden">
+    <!-- Top Navigation -->
+    <nav class="fixed-nav px-6 py-4 flex justify-between items-center">
+        <div class="flex items-center space-x-4">
+            <button class="md:hidden text-white" id="sidebarToggle">
+                <i class="fas fa-bars text-xl"></i>
+            </button>
+            <div class="h-10 w-10 rounded-full bg-gradient-to-r from-blue-400 to-purple-500 flex items-center justify-center logo-pulse">
+                <span class="text-white font-bold">S</span>
+            </div>
+            <div>
+                <h1 class="text-xl font-bold font-space gradient-text">SWSS Supplier</h1>
+                <p class="text-xs text-gray-400">Wheat Supply Chain Management</p>
+            </div>
+        </div>
+        
+        <div class="flex items-center space-x-6">
+            <div class="relative" x-data="{ 
+                open: false, 
+                notifications: [], 
+                unreadCount: 0,
+                
+                loadNotifications() {
+                    fetch('/notifications/unread-count')
+                        .then(response => response.json())
+                        .then(data => {
+                            this.unreadCount = data.unread_count;
+                        });
+                },
+                
+                loadNotificationList() {
+                    fetch('/notifications')
+                        .then(response => response.json())
+                        .then(data => {
+                            this.notifications = data.notifications;
+                            this.unreadCount = data.unread_count;
+                        });
+                },
+                
+                markAsRead(id) {
+                    fetch(`/notifications/${id}/read`, {
+                        method: 'PATCH',
+                        headers: {
+                            'X-CSRF-TOKEN': document.querySelector('meta[name=csrf-token]').getAttribute('content'),
+                            'Content-Type': 'application/json'
+                        }
+                    }).then(() => {
+                        this.loadNotificationList();
+                    });
+                },
+                
+                markAllAsRead() {
+                    fetch('/notifications/mark-all-read', {
+                        method: 'PATCH',
+                        headers: {
+                            'X-CSRF-TOKEN': document.querySelector('meta[name=csrf-token]').getAttribute('content'),
+                            'Content-Type': 'application/json'
+                        }
+                    }).then(() => {
+                        this.loadNotificationList();
+                    });
+                }
+            }" x-init="
+                loadNotifications();
+                loadNotificationList();
+                setInterval(() => { loadNotifications(); loadNotificationList(); }, 30000);
+            ">
+                <button @click="open = !open" class="relative">
+                <i class="fas fa-bell text-gray-300 text-xl cursor-pointer hover:text-white transition-colors"></i>
+                    <span x-show="unreadCount > 0" x-text="unreadCount" 
+                          class="notification-dot absolute -top-1 -right-1 w-5 h-5 rounded-full flex items-center justify-center text-xs font-bold"
+                          style="display: none;"></span>
+                </button>
+                
+                <!-- Notification Dropdown -->
+                <div x-show="open" @click.away="open = false" 
+                     x-transition:enter="transition ease-out duration-200"
+                     x-transition:enter-start="opacity-0 transform scale-95"
+                     x-transition:enter-end="opacity-100 transform scale-100"
+                     x-transition:leave="transition ease-in duration-150"
+                     x-transition:leave-start="opacity-100 transform scale-100"
+                     x-transition:leave-end="opacity-0 transform scale-95"
+                     class="absolute right-0 mt-2 w-80 bg-gray-800 rounded-lg shadow-xl border border-gray-700 z-50"
+                     style="display: none;">
+                    
+                    <!-- Header -->
+                    <div class="px-4 py-3 border-b border-gray-700">
+                        <div class="flex items-center justify-between">
+                            <h3 class="text-sm font-semibold text-white">Notifications</h3>
+                            <button @click="markAllAsRead()" class="text-xs text-blue-400 hover:text-blue-300">
+                                Mark all as read
+                            </button>
+                        </div>
+                    </div>
+                    
+                    <!-- Notifications List -->
+                    <div class="max-h-64 overflow-y-auto">
+                        <template x-for="notification in notifications" :key="notification.id">
+                            <div class="px-4 py-3 hover:bg-gray-700 transition-colors cursor-pointer border-b border-gray-700 last:border-b-0"
+                                 :class="{ 'bg-blue-900/20': !notification.read_at }"
+                                 @click="markAsRead(notification.id)">
+                                <div class="flex items-start space-x-3">
+                                    <div class="flex-shrink-0">
+                                        <i :class="notification.icon" 
+                                           class="text-lg"
+                                           :class="{
+                                               'text-blue-400': notification.color === 'blue',
+                                               'text-green-400': notification.color === 'green',
+                                               'text-yellow-400': notification.color === 'yellow',
+                                               'text-red-400': notification.color === 'red'
+                                           }"></i>
+                                    </div>
+                                    <div class="flex-1 min-w-0">
+                                        <p class="text-sm font-medium text-white" x-text="notification.title"></p>
+                                        <p class="text-xs text-gray-400 mt-1" x-text="notification.message"></p>
+                                        <p class="text-xs text-gray-500 mt-1" x-text="notification.created_at"></p>
+                                    </div>
+                                    <div x-show="!notification.read_at" class="flex-shrink-0">
+                                        <div class="w-2 h-2 bg-blue-400 rounded-full"></div>
+                                    </div>
+                                </div>
+                            </div>
+                        </template>
+                        
+                        <div x-show="notifications.length === 0" class="px-4 py-8 text-center">
+                            <i class="fas fa-bell-slash text-gray-500 text-2xl mb-2"></i>
+                            <p class="text-sm text-gray-400">No notifications</p>
+                        </div>
+                    </div>
+                    
+                    <!-- Footer -->
+                    <div class="px-4 py-2 border-t border-gray-700">
+                        <a href="#" class="text-xs text-blue-400 hover:text-blue-300">View all notifications</a>
+                    </div>
+                </div>
+            </div>
+            <div class="flex items-center space-x-3">
+                <div class="text-right">
+                    <p class="text-sm font-semibold">{{ auth()->user()->name ?? 'Supplier' }}</p>
+                    <p class="text-xs text-gray-400">Supplier Portal</p>
+                </div>
+                <div class="w-10 h-10 rounded-full bg-gradient-to-r from-purple-400 to-pink-400 flex items-center justify-center">
+                    <span class="text-white font-bold text-sm">{{ strtoupper(substr(auth()->user()->name ?? 'S', 0, 2)) }}</span>
+                </div>
+            </div>
+        </div>
+    </nav>
+
+        <!-- Sidebar -->
+        <aside class="sidebar w-64 p-6" id="sidebar">
+            <nav class="space-y-2">
+                <a href="{{ route('supplier.dashboard') }}" class="sidebar-item flex items-center space-x-3 px-4 py-3 rounded-lg text-gray-300">
+                    <i class="fas fa-tachometer-alt w-5"></i>
+                    <span class="font-medium">Dashboard</span>
+                </a>
+            @if(!isset($isRestrictedSupplier) || !$isRestrictedSupplier)
+                <a href="{{ route('inventory.index') }}" class="sidebar-item flex items-center space-x-3 px-4 py-3 rounded-lg text-gray-300">
+                    <i class="fas fa-warehouse w-5"></i>
+                    <span class="font-medium">Inventory</span>
+                </a>
+                <a href="{{ route('orders.index') }}" class="sidebar-item flex items-center space-x-3 px-4 py-3 rounded-lg text-gray-300">
+                    <i class="fas fa-shopping-cart w-5"></i>
+                    <span class="font-medium">Orders</span>
+                </a>
+                <a href="/deliveries" class="sidebar-item flex items-center space-x-3 px-4 py-3 rounded-lg text-gray-300">
+                    <i class="fas fa-truck w-5"></i>
+                    <span class="font-medium">Deliveries</span>
+                </a>
+                <a href="/reports" class="sidebar-item flex items-center space-x-3 px-4 py-3 rounded-lg text-gray-300">
+                    <i class="fas fa-chart-bar w-5"></i>
+                    <span class="font-medium">Reports</span>
+                </a>
+                <a href="/contracts" class="sidebar-item flex items-center space-x-3 px-4 py-3 rounded-lg text-gray-300">
+                    <i class="fas fa-handshake w-5"></i>
+                    <span class="font-medium">Contracts</span>
+                </a>
+                <a href="/payments" class="sidebar-item flex items-center space-x-3 px-4 py-3 rounded-lg text-gray-300">
+                    <i class="fas fa-dollar-sign w-5"></i>
+                    <span class="font-medium">Payments</span>
+                </a>
+            @endif
+            <a href="{{ route('chat.index') }}" class="sidebar-item active flex items-center space-x-3 px-4 py-3 rounded-lg text-white relative">
+                    <i class="fas fa-comments w-5"></i>
+                <span class="font-medium">{{ isset($isRestrictedSupplier) && $isRestrictedSupplier ? 'Chat with Admin' : 'Chat' }}</span>
+                    <span class="notification-dot absolute -top-1 -right-1 w-3 h-3 rounded-full"></span>
+                </a>
+                
+                <div class="pt-6 mt-6 border-t border-gray-700">
+                    <form action="{{ route('logout') }}" method="POST">
+                        @csrf
+                        <button type="submit" class="sidebar-item flex items-center space-x-3 px-4 py-3 rounded-lg text-red-400 hover:text-red-300 w-full text-left">
+                            <i class="fas fa-sign-out-alt w-5"></i>
+                            <span class="font-medium">Logout</span>
+                        </button>
+                    </form>
+                </div>
+            </nav>
+        </aside>
+
+        <!-- Main Content -->
+        <main class="main-content p-6">
+            <!-- Header -->
+            <div class="mb-8">
+                <div class="flex justify-between items-center">
+                    <div>
+                    <h1 class="text-3xl font-bold font-space gradient-text">
+                        @if(isset($isRestrictedSupplier) && $isRestrictedSupplier)
+                            Chat with Admin
+                        @else
+                            Chat & Communication
+                        @endif
+                    </h1>
+                    <p class="mt-2 text-sm text-gray-400">
+                        @if(isset($isRestrictedSupplier) && $isRestrictedSupplier)
+                            Connect with administrators for support and assistance
+                        @else
+                            Connect with farmers, manufacturers, and administrators
+                        @endif
+                    </p>
+                        <div class="flex items-center mt-2 space-x-4 text-xs">
+                            <span class="flex items-center text-green-400">
+                                <i class="fas fa-circle mr-1"></i>
+                                Live Data
+                            </span>
+                            <span class="text-gray-400">
+                                {{ $totalContacts }} total contacts available
+                            </span>
+                            <span class="text-blue-400">
+                                <i class="fas fa-database mr-1"></i>
+                                Database Connected
+                            </span>
+                        </div>
+                    </div>
+                    <div class="flex space-x-3">
+                        <button class="bg-gray-700 hover:bg-gray-600 inline-flex items-center px-4 py-3 rounded-xl font-semibold text-sm text-white transition-colors" id="refreshContacts">
+                            <i class="fas fa-sync-alt mr-2"></i>
+                            Refresh
+                        </button>
+                        <button class="btn-primary inline-flex items-center px-6 py-3 rounded-xl font-semibold text-sm text-white uppercase tracking-wider" id="newChatButton">
+                            <i class="fas fa-plus mr-2"></i>
+                            New Chat
+                        </button>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Live Data Info Panel -->
+            <div class="glass-card p-4 rounded-xl mb-6">
+                <div class="grid grid-cols-2 md:grid-cols-5 gap-4 text-center">
+                @if(isset($isRestrictedSupplier) && $isRestrictedSupplier)
+                <div class="flex flex-col items-center">
+                    <div class="w-8 h-8 rounded-full bg-blue-500 flex items-center justify-center mb-2">
+                        <i class="fas fa-user-shield text-white text-sm"></i>
+                    </div>
+                    <p class="text-xs text-gray-400">Admins</p>
+                    <p class="text-lg font-bold text-white">{{ $admins->count() }}</p>
+                </div>
+                @else
+                    <div class="flex flex-col items-center">
+                        <div class="w-8 h-8 rounded-full bg-green-500 flex items-center justify-center mb-2">
+                            <i class="fas fa-seedling text-white text-sm"></i>
+                        </div>
+                    <p class="text-xs text-gray-400">Farmers</p>
+                    <p class="text-lg font-bold text-white">{{ $farmers->count() ?? 0 }}</p>
+                    </div>
+                    <div class="flex flex-col items-center">
+                    <div class="w-8 h-8 rounded-full bg-yellow-500 flex items-center justify-center mb-2">
+                            <i class="fas fa-industry text-white text-sm"></i>
+                        </div>
+                    <p class="text-xs text-gray-400">Manufacturers</p>
+                    <p class="text-lg font-bold text-white">{{ $manufacturers->count() ?? 0 }}</p>
+                    </div>
+                    <div class="flex flex-col items-center">
+                    <div class="w-8 h-8 rounded-full bg-purple-500 flex items-center justify-center mb-2">
+                            <i class="fas fa-truck text-white text-sm"></i>
+                        </div>
+                    <p class="text-xs text-gray-400">Distributors</p>
+                    <p class="text-lg font-bold text-white">{{ $distributors->count() ?? 0 }}</p>
+                    </div>
+                    <div class="flex flex-col items-center">
+                    <div class="w-8 h-8 rounded-full bg-pink-500 flex items-center justify-center mb-2">
+                            <i class="fas fa-store text-white text-sm"></i>
+                        </div>
+                    <p class="text-xs text-gray-400">Retailers</p>
+                    <p class="text-lg font-bold text-white">{{ $retailers->count() ?? 0 }}</p>
+                    </div>
+                @endif
+                    <div class="flex flex-col items-center">
+                    <div class="w-8 h-8 rounded-full bg-blue-500 flex items-center justify-center mb-2">
+                            <i class="fas fa-user-shield text-white text-sm"></i>
+                        </div>
+                    <p class="text-xs text-gray-400">Admins</p>
+                    <p class="text-lg font-bold text-white">{{ $admins->count() }}</p>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Chat Interface -->
+        <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+                <!-- Contacts List -->
+            <div class="lg:col-span-1">
+                <div class="glass-card p-6 rounded-xl">
+                    <div class="flex items-center justify-between mb-6">
+                        <h2 class="text-xl font-bold font-space gradient-text">
+                            @if(isset($isRestrictedSupplier) && $isRestrictedSupplier)
+                                Administrators
+                            @else
+                                Contacts
+                            @endif
+                        </h2>
+                        <div class="flex items-center space-x-2">
+                            <div class="w-2 h-2 bg-green-400 rounded-full"></div>
+                            <span class="text-xs text-gray-400">Online</span>
+                        </div>
+                    </div>
+                    
+                    <div class="contacts-scroll max-h-96 overflow-y-auto">
+                        @if(isset($isRestrictedSupplier) && $isRestrictedSupplier)
+                            <!-- Show only admins for restricted suppliers -->
+                            @foreach($admins as $admin)
+                            <div class="contact-item flex items-center space-x-3 p-3 rounded-lg hover:bg-gray-700/50 transition-colors cursor-pointer mb-2" 
+                                 data-user-id="{{ $admin->id }}" 
+                                 data-username="{{ $admin->username }}">
+                                <div class="w-10 h-10 rounded-full bg-gradient-to-r from-blue-400 to-purple-500 flex items-center justify-center">
+                                    <span class="text-white font-bold text-sm">{{ strtoupper(substr($admin->username, 0, 2)) }}</span>
+                        </div>
+                                <div class="flex-1 min-w-0">
+                                    <p class="text-sm font-semibold text-white">{{ $admin->username }}</p>
+                                    <p class="text-xs text-gray-400">Administrator</p>
+                        </div>
+                                <div class="w-2 h-2 bg-green-400 rounded-full"></div>
+                    </div>
+                            @endforeach
+                        @else
+                            <!-- Show all contacts for full access -->
+                            @if(isset($farmers) && $farmers->count() > 0)
+                            <div class="mb-4">
+                                <h3 class="text-sm font-semibold text-green-400 mb-2 flex items-center">
+                                    <i class="fas fa-seedling mr-2"></i>
+                                    Farmers
+                                </h3>
+                                @foreach($farmers as $farmer)
+                                <div class="contact-item flex items-center space-x-3 p-3 rounded-lg hover:bg-gray-700/50 transition-colors cursor-pointer mb-2" 
+                                     data-user-id="{{ $farmer->id }}" 
+                                     data-username="{{ $farmer->username }}">
+                                    <div class="w-10 h-10 rounded-full bg-gradient-to-r from-green-400 to-emerald-500 flex items-center justify-center">
+                                        <span class="text-white font-bold text-sm">{{ strtoupper(substr($farmer->username, 0, 2)) }}</span>
+                                    </div>
+                                    <div class="flex-1 min-w-0">
+                                        <p class="text-sm font-semibold text-white">{{ $farmer->username }}</p>
+                                        <p class="text-xs text-gray-400">Farmer</p>
+                                    </div>
+                                    <div class="w-2 h-2 bg-green-400 rounded-full"></div>
+                                </div>
+                                @endforeach
+                        </div>
+                        @endif
+
+                            @if(isset($manufacturers) && $manufacturers->count() > 0)
+                            <div class="mb-4">
+                                <h3 class="text-sm font-semibold text-yellow-400 mb-2 flex items-center">
+                                    <i class="fas fa-industry mr-2"></i>
+                                    Manufacturers
+                                </h3>
+                                @foreach($manufacturers as $manufacturer)
+                                <div class="contact-item flex items-center space-x-3 p-3 rounded-lg hover:bg-gray-700/50 transition-colors cursor-pointer mb-2" 
+                                     data-user-id="{{ $manufacturer->id }}" 
+                                     data-username="{{ $manufacturer->username }}">
+                                    <div class="w-10 h-10 rounded-full bg-gradient-to-r from-yellow-400 to-orange-500 flex items-center justify-center">
+                                        <span class="text-white font-bold text-sm">{{ strtoupper(substr($manufacturer->username, 0, 2)) }}</span>
+                                    </div>
+                                    <div class="flex-1 min-w-0">
+                                        <p class="text-sm font-semibold text-white">{{ $manufacturer->username }}</p>
+                                        <p class="text-xs text-gray-400">Manufacturer</p>
+                                    </div>
+                                    <div class="w-2 h-2 bg-green-400 rounded-full"></div>
+                                </div>
+                                @endforeach
+                        </div>
+                        @endif
+
+                            @if(isset($distributors) && $distributors->count() > 0)
+                            <div class="mb-4">
+                                <h3 class="text-sm font-semibold text-purple-400 mb-2 flex items-center">
+                                    <i class="fas fa-truck mr-2"></i>
+                                    Distributors
+                                </h3>
+                                @foreach($distributors as $distributor)
+                                <div class="contact-item flex items-center space-x-3 p-3 rounded-lg hover:bg-gray-700/50 transition-colors cursor-pointer mb-2" 
+                                     data-user-id="{{ $distributor->id }}" 
+                                     data-username="{{ $distributor->username }}">
+                                    <div class="w-10 h-10 rounded-full bg-gradient-to-r from-purple-400 to-pink-500 flex items-center justify-center">
+                                        <span class="text-white font-bold text-sm">{{ strtoupper(substr($distributor->username, 0, 2)) }}</span>
+                                    </div>
+                                    <div class="flex-1 min-w-0">
+                                        <p class="text-sm font-semibold text-white">{{ $distributor->username }}</p>
+                                        <p class="text-xs text-gray-400">Distributor</p>
+                                    </div>
+                                    <div class="w-2 h-2 bg-green-400 rounded-full"></div>
+                                </div>
+                                @endforeach
+                        </div>
+                        @endif
+
+                            @if(isset($retailers) && $retailers->count() > 0)
+                            <div class="mb-4">
+                                <h3 class="text-sm font-semibold text-pink-400 mb-2 flex items-center">
+                                    <i class="fas fa-store mr-2"></i>
+                                    Retailers
+                                </h3>
+                                @foreach($retailers as $retailer)
+                                <div class="contact-item flex items-center space-x-3 p-3 rounded-lg hover:bg-gray-700/50 transition-colors cursor-pointer mb-2" 
+                                     data-user-id="{{ $retailer->id }}" 
+                                     data-username="{{ $retailer->username }}">
+                                    <div class="w-10 h-10 rounded-full bg-gradient-to-r from-pink-400 to-rose-500 flex items-center justify-center">
+                                        <span class="text-white font-bold text-sm">{{ strtoupper(substr($retailer->username, 0, 2)) }}</span>
+                                    </div>
+                                    <div class="flex-1 min-w-0">
+                                        <p class="text-sm font-semibold text-white">{{ $retailer->username }}</p>
+                                        <p class="text-xs text-gray-400">Retailer</p>
+                                    </div>
+                                    <div class="w-2 h-2 bg-green-400 rounded-full"></div>
+                                </div>
+                                @endforeach
+                        </div>
+                        @endif
+
+                            @if(isset($admins) && $admins->count() > 0)
+                            <div class="mb-4">
+                                <h3 class="text-sm font-semibold text-blue-400 mb-2 flex items-center">
+                                    <i class="fas fa-user-shield mr-2"></i>
+                                    Administrators
+                                </h3>
+                                @foreach($admins as $admin)
+                                <div class="contact-item flex items-center space-x-3 p-3 rounded-lg hover:bg-gray-700/50 transition-colors cursor-pointer mb-2" 
+                                     data-user-id="{{ $admin->id }}" 
+                                     data-username="{{ $admin->username }}">
+                                    <div class="w-10 h-10 rounded-full bg-gradient-to-r from-blue-400 to-purple-500 flex items-center justify-center">
+                                        <span class="text-white font-bold text-sm">{{ strtoupper(substr($admin->username, 0, 2)) }}</span>
+                                    </div>
+                                    <div class="flex-1 min-w-0">
+                                        <p class="text-sm font-semibold text-white">{{ $admin->username }}</p>
+                                        <p class="text-xs text-gray-400">Administrator</p>
+                                    </div>
+                                    <div class="w-2 h-2 bg-green-400 rounded-full"></div>
+                                </div>
+                                @endforeach
+                        </div>
+                        @endif
+                        @endif
+                    </div>
+                    </div>
+                </div>
+
+                <!-- Chat Area -->
+            <div class="lg:col-span-2">
+                <div class="glass-card p-6 rounded-xl h-96 flex flex-col">
+                    <div class="flex items-center justify-between mb-4">
+                        <div class="flex items-center space-x-3">
+                            <div class="w-10 h-10 rounded-full bg-gradient-to-r from-blue-400 to-purple-500 flex items-center justify-center">
+                                <span class="text-white font-bold text-sm" id="selectedUserInitials">--</span>
+                            </div>
+                            <div>
+                                <h3 class="text-lg font-semibold text-white" id="selectedUsername">Select a contact to start chatting</h3>
+                                <p class="text-sm text-gray-400" id="selectedUserRole">Click on any contact from the list</p>
+                            </div>
+                        </div>
+                        <div class="flex items-center space-x-2">
+                            <div class="w-2 h-2 bg-gray-400 rounded-full" id="selectedUserStatus"></div>
+                            <span class="text-xs text-gray-400" id="selectedUserStatusText">Offline</span>
+                        </div>
+                    </div>
+
+                    <div class="flex-1 bg-gray-800/30 rounded-lg p-4 mb-4 overflow-y-auto" id="chatMessages">
+                        <div class="text-center text-gray-400 py-8">
+                            <i class="fas fa-comments text-4xl mb-4"></i>
+                            <p class="text-lg font-medium">Welcome to SWSS Chat</p>
+                            <p class="text-sm">Select a contact from the list to start a conversation</p>
+                        </div>
+                    </div>
+
+                    <div class="flex space-x-3">
+                        <!-- Buttons removed as requested -->
+                    </div>
+                </div>
+            </div>
+        </main>
+
+    <script>
+        // Mobile sidebar toggle
+        document.getElementById('sidebarToggle').addEventListener('click', function() {
+            document.getElementById('sidebar').classList.toggle('open');
+        });
+
+        // Chat functionality
+        let selectedUserId = null;
+        let selectedUsername = null;
+
+        // Contact selection
+        document.querySelectorAll('.contact-item').forEach(item => {
+            item.addEventListener('click', function() {
+                const userId = this.dataset.userId;
+                const username = this.dataset.username;
+                
+                // Update selected contact
+                selectedUserId = userId;
+                selectedUsername = username;
+                
+                // Update UI
+                document.getElementById('selectedUserInitials').textContent = username.substring(0, 2).toUpperCase();
+                document.getElementById('selectedUsername').textContent = username;
+                document.getElementById('selectedUserRole').textContent = 'Online';
+                document.getElementById('selectedUserStatus').className = 'w-2 h-2 bg-green-400 rounded-full';
+                document.getElementById('selectedUserStatusText').textContent = 'Online';
+                
+                // Enable chat input
+                document.getElementById('messageInput').disabled = false;
+                document.getElementById('sendMessage').disabled = false;
+                
+                // Update chat messages
+                document.getElementById('chatMessages').innerHTML = `
+                    <div class="text-center text-gray-400 py-8">
+                        <i class="fas fa-comments text-4xl mb-4"></i>
+                        <p class="text-lg font-medium">Chat with ${username}</p>
+                        <p class="text-sm">Start typing to send a message</p>
+                </div>
+            `;
+                
+                // Remove active class from all contacts
+                document.querySelectorAll('.contact-item').forEach(contact => {
+                    contact.classList.remove('bg-gray-700/50');
+                });
+                
+                // Add active class to selected contact
+                this.classList.add('bg-gray-700/50');
+            });
+        });
+
+        // Send message functionality
+        document.getElementById('sendMessage').addEventListener('click', function() {
+            const messageInput = document.getElementById('messageInput');
+            const message = messageInput.value.trim();
+            
+            if (message && selectedUserId) {
+                // Add message to chat
+                const chatMessages = document.getElementById('chatMessages');
+            const messageElement = document.createElement('div');
+                messageElement.className = 'chat-message mb-4';
+            messageElement.innerHTML = `
+                    <div class="flex justify-end">
+                        <div class="bg-blue-500 text-white px-4 py-2 rounded-lg max-w-xs">
+                    <p class="text-sm">${message}</p>
+                            <p class="text-xs opacity-75 mt-1">${new Date().toLocaleTimeString()}</p>
+                </div>
+                </div>
+            `;
+                chatMessages.appendChild(messageElement);
+            
+                // Clear input
+                messageInput.value = '';
+            
+            // Scroll to bottom
+                chatMessages.scrollTop = chatMessages.scrollHeight;
+            
+                // Simulate reply (in real app, this would come from server)
+            setTimeout(() => {
+                    const replyElement = document.createElement('div');
+                    replyElement.className = 'chat-message mb-4';
+                    replyElement.innerHTML = `
+                        <div class="flex justify-start">
+                            <div class="bg-gray-600 text-white px-4 py-2 rounded-lg max-w-xs">
+                                <p class="text-sm">Thank you for your message. An administrator will respond shortly.</p>
+                                <p class="text-xs opacity-75 mt-1">${new Date().toLocaleTimeString()}</p>
+                </div>
+                </div>
+            `;
+                    chatMessages.appendChild(replyElement);
+                    chatMessages.scrollTop = chatMessages.scrollHeight;
+                }, 1000);
+            }
+        });
+
+        // Enter key to send message
+        document.getElementById('messageInput').addEventListener('keypress', function(e) {
+            if (e.key === 'Enter') {
+                document.getElementById('sendMessage').click();
+            }
+        });
+
+        // Refresh contacts
+        document.getElementById('refreshContacts').addEventListener('click', function() {
+            location.reload();
+        });
+
+        // New chat button
+        document.getElementById('newChatButton').addEventListener('click', function() {
+            // Reset chat interface
+            selectedUserId = null;
+            selectedUsername = null;
+            
+            document.getElementById('selectedUserInitials').textContent = '--';
+            document.getElementById('selectedUsername').textContent = 'Select a contact to start chatting';
+            document.getElementById('selectedUserRole').textContent = 'Click on any contact from the list';
+            document.getElementById('selectedUserStatus').className = 'w-2 h-2 bg-gray-400 rounded-full';
+            document.getElementById('selectedUserStatusText').textContent = 'Offline';
+            
+            document.getElementById('messageInput').disabled = true;
+            document.getElementById('sendMessage').disabled = true;
+            
+            document.getElementById('chatMessages').innerHTML = `
+                <div class="text-center text-gray-400 py-8">
+                    <i class="fas fa-comments text-4xl mb-4"></i>
+                    <p class="text-lg font-medium">Welcome to SWSS Chat</p>
+                    <p class="text-sm">Select a contact from the list to start a conversation</p>
+                </div>
+            `;
+            
+            // Remove active class from all contacts
+            document.querySelectorAll('.contact-item').forEach(contact => {
+                contact.classList.remove('bg-gray-700/50');
+            });
+        });
+    </script>
+</body>
+</html> 

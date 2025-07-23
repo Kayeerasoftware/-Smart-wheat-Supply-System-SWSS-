@@ -5,9 +5,11 @@ namespace App\Http\Controllers;
 use App\Models\Inventory;
 use App\Models\Product;
 use App\Models\Warehouse;
+use App\Models\Vendor;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Auth;
 
 class InventoryController extends Controller
 {
@@ -17,10 +19,36 @@ class InventoryController extends Controller
     }
 
     /**
+     * Check if supplier has access to inventory
+     */
+    private function checkSupplierAccess()
+    {
+        $user = Auth::user();
+        
+        if ($user->role === 'supplier') {
+            $vendor = Vendor::where('user_id', $user->id)->first();
+            
+            // Allow access if vendor has basic access (PDF validated) or full access
+            if (!$vendor || (!$vendor->hasBasicAccess() && !$vendor->hasFullAccess())) {
+                return redirect()->route('supplier.dashboard')
+                    ->with('error', 'You need PDF validation to access inventory management.');
+            }
+        }
+        
+        return null; // Access allowed
+    }
+
+    /**
      * Display a listing of inventory
      */
     public function index(Request $request)
     {
+        // Check supplier access
+        $accessCheck = $this->checkSupplierAccess();
+        if ($accessCheck) {
+            return $accessCheck;
+        }
+
         $query = Inventory::with(['product.category', 'warehouse']);
 
         // Filter by warehouse
@@ -71,10 +99,31 @@ class InventoryController extends Controller
      */
     public function create()
     {
-        $products = Product::active()->get();
-        $warehouses = Warehouse::active()->get();
-        
-        return view('inventory.create', compact('products', 'warehouses'));
+        // Check supplier access
+        $accessCheck = $this->checkSupplierAccess();
+        if ($accessCheck) {
+            return $accessCheck;
+        }
+
+        try {
+            $products = Product::active()->get();
+            $warehouses = Warehouse::active()->get();
+            
+            // Debug information
+            \Log::info('Inventory create method called', [
+                'products_count' => $products->count(),
+                'warehouses_count' => $warehouses->count(),
+                'view_path' => resource_path('views/inventory/create.blade.php')
+            ]);
+            
+            return view('inventory.create', compact('products', 'warehouses'));
+        } catch (\Exception $e) {
+            \Log::error('Error in inventory create method', [
+                'error' => $e->getMessage(),
+                'trace' => $e->getTraceAsString()
+            ]);
+            throw $e;
+        }
     }
 
     /**
@@ -82,6 +131,12 @@ class InventoryController extends Controller
      */
     public function store(Request $request)
     {
+        // Check supplier access
+        $accessCheck = $this->checkSupplierAccess();
+        if ($accessCheck) {
+            return $accessCheck;
+        }
+
         $request->validate([
             'product_id' => 'required|exists:products,id',
             'warehouse_id' => 'required|exists:warehouses,id',

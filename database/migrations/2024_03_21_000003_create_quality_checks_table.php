@@ -15,7 +15,7 @@ return new class extends Migration
             $table->enum('status', ['passed', 'failed'])->default('failed');
             $table->text('notes')->nullable();
             $table->unsignedBigInteger('checked_by');
-            $table->foreign('checked_by')->references('user_id')->on('users')->cascadeOnDelete();
+            $table->foreign('checked_by')->references('id')->on('users')->onDelete('cascade');
             $table->timestamp('checked_at');
             $table->timestamps();
         });
