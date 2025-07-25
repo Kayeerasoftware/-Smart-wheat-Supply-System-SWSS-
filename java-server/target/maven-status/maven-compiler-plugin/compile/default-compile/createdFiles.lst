@@ -1,0 +1,5 @@
+com\swss\model\PdfValidationResponse.class
+com\swss\PdfValidationServerApplication.class
+com\swss\controller\PdfValidationController.class
+com\swss\model\PdfValidationRequest.class
+com\swss\service\PdfValidationService.class
